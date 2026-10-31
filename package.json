@@ -1,0 +1,10 @@
+{
+  "name": "pixel-quest",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node js/server.mjs",
+    "build": "node js/build.mjs",
+    "test": "node --test js/api.test.mjs"
+  }
+}

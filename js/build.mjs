@@ -1,0 +1,12 @@
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
+import {loadAssets} from './server.mjs';
+const assets=await loadAssets();
+const packed=Object.fromEntries(Object.entries(assets).map(([key,a])=>[key,{type:a.type,base64:Buffer.from(a.body).toString('base64')}]));
+const catalog=await readFile(new URL('./catalog.js',import.meta.url),'utf8');
+const api=(await readFile(new URL('./api.mjs',import.meta.url),'utf8')).replace("import {catalog} from './catalog.js';",'');
+const source=catalog+'\n'+api+'\nconst packed='+JSON.stringify(packed)+`;\nconst assets=Object.fromEntries(Object.entries(packed).map(([key,a])=>[key,{type:a.type,body:Uint8Array.from(atob(a.base64),c=>c.charCodeAt(0))}]));\nexport default {fetch:createHandler(assets)};`;
+await mkdir(new URL('../dist/server/',import.meta.url),{recursive:true});
+await mkdir(new URL('../dist/.openai/',import.meta.url),{recursive:true});
+await writeFile(new URL('../dist/server/index.js',import.meta.url),source);
+await writeFile(new URL('../dist/.openai/hosting.json',import.meta.url),await readFile(new URL('../.openai/hosting.json',import.meta.url)));
+console.log('Built dist/server/index.js');
