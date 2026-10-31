@@ -8,12 +8,13 @@ const stored=readStorage('pq-saved',[]);
 let saved=new Set(Array.isArray(stored)?stored.filter(validId).map(Number):[]);
 let games=catalog.map(g=>({...g,price:null})), type='all', query='', genre='all', sort='featured', activeId=null, previousFocus=null, detailToken=0;
 const details=new Map();
+let ownedGames=null, libraryLimit=25, currentUser=null;
 let toastTimer;
 function toast(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,3200)}
 function money(value,currency='TWD'){try{return new Intl.NumberFormat('zh-TW',{style:'currency',currency,maximumFractionDigits:currency==='TWD'?0:2}).format(value/100)}catch{return (value/100).toFixed(2)+' '+currency}}
 function priceHTML(p){if(!p)return '<span class="price-unavailable">價格暫未取得</span>';return `<span class="price">${p.discount?`<span class="discount">-${esc(p.discount)}%</span><del>${esc(money(p.initial,p.currency))}</del>`:''}<strong>${p.free?'免費遊玩':esc(money(p.final,p.currency))}</strong></span>`}
 function saveButton(g){return `<button class="save-button ${saved.has(g.id)?'saved':''}" data-save="${g.id}" aria-pressed="${saved.has(g.id)}" aria-label="${saved.has(g.id)?'取消收藏':'收藏'} ${esc(g.name)}">${saved.has(g.id)?'♥':'♡'}</button>`}
-function card(g){return `<article class="game-card"><div class="card-image"><img src="/images/${g.id}.jpg" alt="${esc(g.name)} 遊戲封面" width="460" height="215" loading="lazy"><div class="card-labels"><span class="label ${g.indie?'purple':''}">${g.solo?'個人開發':g.indie?'獨立遊戲':'STEAM'}</span></div></div>${saveButton(g)}<div class="card-content"><h3>${esc(g.name)}</h3><p class="card-subtitle">${esc(g.zh)}</p><div class="card-tags"><span>${esc(g.genre)}</span>${g.indie?'<span>Indie</span>':''}</div><div class="card-bottom"><span class="steam-mark">STEAM ↗</span>${priceHTML(g.price)}</div></div><button class="card-open" data-open="${g.id}" aria-label="查看 ${esc(g.name)} 遊戲介紹"></button></article>`}
+function card(g){return `<article class="game-card"><div class="card-image"><img src="/images/${g.id}.jpg" alt="${esc(g.name)} 遊戲封面" width="460" height="215" loading="lazy"><div class="card-labels"><span class="label ${g.indie?'purple':''}">${g.solo?'個人開發':g.indie?'獨立遊戲':'STEAM'}</span>${ownedGames?.some(x=>x.id===g.id)?'<span class="label owned-label">已擁有</span>':''}</div></div>${saveButton(g)}<div class="card-content"><h3>${esc(g.name)}</h3><p class="card-subtitle">${esc(g.zh)}</p><div class="card-tags"><span>${esc(g.genre)}</span>${g.indie?'<span>Indie</span>':''}</div><div class="card-bottom"><span class="steam-mark">STEAM ↗</span>${priceHTML(g.price)}</div></div><button class="card-open" data-open="${g.id}" aria-label="查看 ${esc(g.name)} 遊戲介紹"></button></article>`}
 function render(){
   let list=games.filter(g=>(type!=='indie'||g.indie)&&(type!=='solo'||g.solo)&&(type!=='saved'||saved.has(g.id))&&(genre==='all'||g.genre===genre)&&[g.name,g.zh,g.developer].some(x=>x.toLowerCase().includes(query)));
   if(sort==='name')list.sort((a,b)=>a.name.localeCompare(b.name));
@@ -83,6 +84,9 @@ document.addEventListener('click',e=>{
   if(e.target.closest('#dialog-save'))toggleSave(activeId);
   const del=e.target.closest('[data-delete]');if(del){if(writeStorage('pq-comments',comments().filter(c=>c.id!==del.dataset.delete)))renderComments()}
   if(e.target.closest('#retry-community'))loadCommunity();
+  if(e.target.closest('#load-library'))loadLibrary();
+  if(e.target.closest('#more-library')){libraryLimit+=25;renderLibrary()}
+  if(e.target.closest('#retry-account'))loadAccount();
 });
 document.addEventListener('submit',e=>{
   if(e.target.id!=='comment-form')return;e.preventDefault();
@@ -105,4 +109,34 @@ dialog.addEventListener('close',()=>{activeId=null;detailToken++;document.body.c
 document.addEventListener('keydown',e=>{if(e.key==='/'&&!dialog.open&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){e.preventDefault();$('#search').focus();$('#explore').scrollIntoView()}});
 const observer=new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting)document.querySelectorAll('.nav-link').forEach(a=>a.classList.toggle('active',a.hash==='#'+entry.target.id))},{rootMargin:'-15% 0px -65% 0px'});
 ['explore','indie','deals','community'].forEach(id=>observer.observe(document.getElementById(id)));
-render();loadCatalog();loadCommunity();
+async function loadAccount(){
+  const box=$('#account-content');
+  try{
+    const c=await fetch('/auth/steam/config',{cache:'no-store'});if(!c.ok)throw Error();const config=await c.json();
+    if(!config.loginReady){box.innerHTML='<div class="account-card"><div class="avatar-placeholder pixel" aria-hidden="true">＋</div><div><h3>Steam 登入準備中</h3><p>這個版本已預留登入與個人資料介面，網站管理者需要先完成後端登入設定。</p><p class="fine-print">你仍可直接使用遊戲探索、收藏及試用留言。</p></div></div>';return}
+    const r=await fetch('/api/me',{cache:'no-store'});if(!r.ok)throw Error();const d=await r.json();
+    if(!d.authenticated){
+      box.innerHTML=`<div class="account-card"><div class="avatar-placeholder pixel" aria-hidden="true">P1</div><div><h3>把你的 Steam 身分帶進來</h3><p>登入後可查看 SteamID。${config.profileReady?'還能讀取暱稱、頭像，以及公開的遊戲庫。':'暱稱、頭像與遊戲庫將在網站管理者設定 API Key 後開放。'}</p><a class="button primary steam-login" href="/auth/steam" target="_top">使用 Steam 登入 ↗</a><p class="fine-print">前往 Steam 官方網站驗證，本站不會要求你的 Steam 密碼。</p></div></div>`;
+    }else{
+      currentUser=d.user;
+      $('#steam-nav').textContent=d.user.name?'我的 Steam':'Steam 已登入';
+      const status={key_required:'Steam 身分已驗證。管理者尚未設定 API Key，暱稱、頭像與遊戲庫暫時無法讀取。',unavailable:'Steam 身分已驗證，但個人資料暫時無法讀取，請稍後再試。',ok:'已連接 Steam。可選擇讀取公開的遊戲庫，查看已擁有的作品。'}[d.profileStatus]||'已連接 Steam。';
+      box.innerHTML=`<div class="account-card">${d.user.avatar?`<img class="player-avatar" src="${esc(d.user.avatar)}" alt="Steam 玩家頭像" width="88" height="88">`:'<div class="avatar-placeholder pixel" aria-hidden="true">P1</div>'}<div class="player-info"><p class="eyebrow lime">STEAM CONNECTED</p><h3>${esc(d.user.name||'Steam 玩家')}</h3><p class="steam-id">SteamID：${esc(d.user.steamid)}</p><p>${esc(status)}</p><div class="account-actions"><a class="text-link" href="${esc(d.user.profileUrl)}" target="_blank" rel="noopener noreferrer">Steam 個人檔案 ↗</a><form action="/auth/steam/logout" method="post" target="_top"><button class="button outline" type="submit">登出 Steam</button></form></div></div></div><div class="library-panel"><div class="library-heading"><div><h3>我的 Steam 遊戲庫</h3><p>由你決定何時讀取。只取得 Steam 允許公開的遊戲及累積時數。</p></div><button id="load-library" class="button outline" ${!config.profileReady?'disabled':''}>讀取我的遊戲庫 ↻</button></div><div id="library-result" role="status"><p class="muted">${config.profileReady?'尚未讀取遊戲庫。':'等待管理者設定 Steam Web API Key。'}</p></div></div>`;
+    }
+    const outcome=new URL(location.href).searchParams.get('steam_login');
+    if(outcome){$('#account-notice').textContent={success:'Steam 登入成功。',cancelled:'你已取消 Steam 登入，可以繼續瀏覽。',failed:'Steam 登入未通過驗證，可能是連線中斷、回呼過期或瀏覽器封鎖 Cookie。請重新登入。'}[outcome]||'';const clean=new URL(location.href);clean.searchParams.delete('steam_login');history.replaceState(null,'',clean.pathname+clean.search+clean.hash)}
+  }catch{box.innerHTML='<div class="account-card"><div><h3>暫時無法確認登入狀態</h3><p>遊戲探索仍可使用，請稍後再試。</p><button class="button outline" id="retry-account">重新確認</button></div></div>'}
+}
+function renderLibrary(){
+  if(!ownedGames)return;
+  $('#library-result').innerHTML=ownedGames.length?`<p class="library-summary">已取得 ${ownedGames.length} 款作品 · 依累積遊玩時間排序</p><div class="library-list">${ownedGames.slice(0,libraryLimit).map(g=>`<a class="library-row" href="https://store.steampowered.com/app/${g.id}/" target="_blank" rel="noopener noreferrer"><span>${esc(g.name)}</span><strong>${esc((g.minutes/60).toLocaleString('zh-TW',{maximumFractionDigits:1}))} 小時 ↗</strong></a>`).join('')}</div>${ownedGames.length>libraryLimit?'<button class="text-link" id="more-library">顯示更多作品 ↓</button>':''}`:'<p class="muted">Steam 回傳的可見遊戲數為 0，目前沒有可列出的作品。</p>';
+}
+async function loadLibrary(){
+  const b=$('#load-library'),result=$('#library-result');b.disabled=true;result.textContent='正在從 Steam 讀取遊戲庫…';
+  try{
+    const r=await fetch('/api/me/games',{cache:'no-store'});const d=await r.json();
+    if(!r.ok||d.status!=='ok'){result.textContent=d.message||d.error||'暫時無法取得遊戲庫。';return}
+    ownedGames=d.games;libraryLimit=25;renderLibrary();render();
+  }catch{result.textContent='連線中斷，請稍後重新讀取。'}finally{b.disabled=false}
+}
+render();loadCatalog();loadCommunity();loadAccount();

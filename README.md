@@ -53,3 +53,35 @@
 執行 `npm test` 驗證價格、快取與 API 存取保護；執行 `npm run build` 封裝部署檔案。
 
 目前沒有會員、公開投稿、跨裝置同步、歷史價格與全商店匯入。價格受地區、時間與 Steam 端狀況影響，購買以 Steam 結帳頁為準。
+
+## Steam 登入設定（可設定版本）
+
+瀏覽網站不需要登入。Steam 登入使用官方 OpenID，不會在本站輸入 Steam 密碼；OpenID 身分驗證本身不需要 Web API Key。
+
+本機步驟：
+
+1. 需要 Node.js 22.13 或以上版本（建議 Node.js 24 LTS）。
+2. 將 `.env.example` 複製成 `.env`。
+3. 申請一般 Steam Web API Key：https://steamcommunity.com/dev/apikey 。將金鑰填入 `.env` 的 `STEAM_API_KEY=` 後方；不要加進 app.js 或 index.html，也不要提交 Git。
+4. 本機維持 `SITE_ORIGIN=http://localhost:3000`，再執行 `npm start`。請使用這個網址登入，不要改成 127.0.0.1，因為回呼和登入 Cookie 必須使用同一來源。
+5. 若更換 PORT，SITE_ORIGIN 也須對應。例如兩者分別設為 3001、http://localhost:3001。
+6. 修改金鑰後，重新啟動伺服器。
+
+`.env` 尚未填入金鑰時，仍可進行 Steam 身分驗證並顯示 SteamID，但暱稱、頭像與遊戲庫會明確顯示等待管理者設定。設定金鑰後不需修改前端。
+
+`SESSION_SECRET` 是本站用來保護登入 Cookie 的另一個隨機祕密，不是 Steam API Key。本機省略時每次啟動產生新值，重啟後需重新登入；正式環境必須設定固定且至少 32 字元的高強度隨機值。
+
+正式環境透過主機的機密環境變數設定 `STEAM_API_KEY`、`SESSION_SECRET`，以及非機密的 `SITE_ORIGIN`。本機 .env 不會隨部署上傳；線上金鑰須另外設定。登入與使用者資料端點使用 no-store，不進入公開遊戲快取。
+
+新增檔案：
+
+- js/steam-auth.mjs：OpenID 回呼、簽章 Cookie、個人資料和遊戲庫端點。
+- js/steam-auth.test.mjs：登入與隱私保護測試。
+- js/migrations/0001_steam_login.sql：一次性登入回呼識別碼的資料表。
+- .env.example：可填寫設定的範本，沒有真實金鑰。
+
+本機只會在 `.local/auth.sqlite` 保存短期隨機登入識別碼，用來阻擋重複回呼；不保存 Steam 密碼、個人檔案或遊戲庫。線上對應使用 D1 的 DB binding。有效的登入 Cookie 最長 8 小時，Secure（線上）、HttpOnly、SameSite=Lax，且不能用前端自行填入 SteamID 偽裝成會員。
+
+遊戲庫需由登入玩家主動點擊讀取。私人遊戲庫或未回傳資料會呈現無法取得，不會解讀為零款遊戲。收藏與試用留言仍是本機瀏覽器功能；本版沒有跨裝置會員收藏或公開會員留言。
+
+測試中的 Steam 正面驗證、個人資料和遊戲庫回應使用模擬資料，不會用開發者或訪客的帳號自動登入。真實資料讀取仍需管理者金鑰，以及使用者在 Steam 官方頁面完成登入。

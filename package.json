@@ -5,6 +5,6 @@
   "scripts": {
     "start": "node js/server.mjs",
     "build": "node js/build.mjs",
-    "test": "node --test js/api.test.mjs"
+    "test": "node --test js/api.test.mjs js/steam-auth.test.mjs"
   }
 }

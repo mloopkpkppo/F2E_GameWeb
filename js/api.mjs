@@ -1,4 +1,5 @@
 import {catalog} from './catalog.js';
+import {handleSteamAuth} from './steam-auth.mjs';
 const TTL = 10 * 60 * 1000;
 const memory = new Map();
 const pending = new Map();
@@ -43,8 +44,10 @@ async function reviews(id) {
   });
 }
 export function createHandler(assets = {}) {
-  return async function handle(request) {
+  return async function handle(request, env = {}) {
     const url=new URL(request.url), path=url.pathname;
+    const auth=await handleSteamAuth(request,env);
+    if(auth)return auth;
     if(request.method!=='GET') return json({error:'不支援的操作'},405);
     if(path==='/api/catalog') {
       const games=[];
