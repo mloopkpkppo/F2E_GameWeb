@@ -1,4 +1,5 @@
 dist/
+node_modules/
 site.tar.gz
 .env
 .env.*

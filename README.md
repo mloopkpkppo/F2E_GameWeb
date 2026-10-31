@@ -1,5 +1,17 @@
 # PIXEL QUEST｜遊戲探索基地
 
+## 程式排版
+
+原始碼採用 2 個空白縮排、分行標籤與分行樣式規則。安裝開發工具後，可使用以下指令維持團隊一致的格式：
+
+```text
+npm install
+npm run format
+npm run format:check
+```
+
+`npm run format` 會整理排版，`npm run format:check` 只檢查。格式由 `.prettierrc.json`、`.editorconfig` 與 `.gitattributes` 統一設定；`dist/` 是自動產生的部署檔案，不用手動修改。
+
 繁體中文像素遊戲介紹網站。使用原生 HTML、CSS、JavaScript 與 Node.js 內建模組。遊戲精選使用資料檔；Steam 登入使用內建 SQLite 保存短期驗證紀錄，不需另外安裝資料庫服務。
 
 ## 啟動
