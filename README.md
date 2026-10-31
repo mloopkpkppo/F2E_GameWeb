@@ -1,10 +1,10 @@
 # PIXEL QUEST｜遊戲探索基地
 
-繁體中文像素遊戲介紹網站。使用原生 HTML、CSS、JavaScript 與 Node.js 內建模組；不用安裝第三方套件或資料庫。
+繁體中文像素遊戲介紹網站。使用原生 HTML、CSS、JavaScript 與 Node.js 內建模組。遊戲精選使用資料檔；Steam 登入使用內建 SQLite 保存短期驗證紀錄，不需另外安裝資料庫服務。
 
 ## 啟動
 
-需安裝 Node.js 22 以上版本（建議 LTS）。在這個資料夾開啟終端機，執行 `npm start`，再開啟 http://localhost:3000 。也可以雙擊「啟動網站.cmd」。按 Ctrl+C 停止伺服器。
+需安裝 Node.js 22.13 以上版本（建議 Node.js 24 LTS）。在這個資料夾開啟終端機，執行 `npm start`，再開啟 http://localhost:3000 。也可以雙擊「啟動網站.cmd」。按 Ctrl+C 停止伺服器。
 
 請透過本機伺服器使用；直接雙擊 index.html 或只有靜態檔案的 Live Server 無法執行 Steam 後端串接。
 
@@ -52,7 +52,7 @@
 
 執行 `npm test` 驗證價格、快取與 API 存取保護；執行 `npm run build` 封裝部署檔案。
 
-目前沒有會員、公開投稿、跨裝置同步、歷史價格與全商店匯入。價格受地區、時間與 Steam 端狀況影響，購買以 Steam 結帳頁為準。
+目前支援選擇性的 Steam 身分登入，沒有公開投稿、跨裝置同步、歷史價格與全商店匯入。價格受地區、時間與 Steam 端狀況影響，購買以 Steam 結帳頁為準。
 
 ## Steam 登入設定（可設定版本）
 
