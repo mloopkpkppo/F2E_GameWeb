@@ -668,22 +668,25 @@ select {
   padding: 24px 20px;
 }
 .spotlight h3 {
-  font-size: var(--text-body);
-  line-height: 1.6;
+  font-size: var(--text-heading);
+  line-height: 1.4;
   margin: 10px 0 13px;
 }
 .spotlight p:not(.tiny) {
   color: #b3b9d0;
-  font-size: var(--text-small);
+  font-size: var(--text-body);
   line-height: 1.9;
   margin-bottom: 9px;
 }
+.spotlight .label {
+  font-size: var(--text-body);
+}
 .spotlight .tiny {
   margin: 12px 0 0;
-  font-size: var(--text-small);
+  font-size: var(--text-body);
 }
 .spotlight .text-link {
-  font-size: var(--text-small);
+  font-size: var(--text-body);
   color: var(--purple);
 }
 .indie-note {
@@ -1095,7 +1098,7 @@ body.modal-open {
     display: none;
   }
   .spotlight h3 {
-    font-size: var(--text-body);
+    font-size: var(--text-heading);
   }
   .hero-actions {
     gap: 12px;
@@ -1191,7 +1194,7 @@ body.modal-open {
     gap: 16px;
   }
   .spotlight h3 {
-    font-size: var(--text-body);
+    font-size: var(--text-heading);
   }
   .section-heading > .text-link {
     white-space: nowrap;
@@ -1342,19 +1345,19 @@ body.modal-open {
     padding: 18px 14px;
   }
   .spotlight h3 {
-    font-size: var(--text-body);
+    font-size: var(--text-heading);
   }
   .spotlight h3 br {
     display: block;
   }
   .spotlight p:not(.tiny) {
-    font-size: var(--text-small);
+    font-size: var(--text-body);
   }
   .spotlight .text-link {
-    font-size: var(--text-small);
+    font-size: var(--text-body);
   }
   .spotlight .label {
-    font-size: var(--text-small);
+    font-size: var(--text-body);
   }
   .deals-grid {
     grid-template-columns: 1fr;
@@ -1826,7 +1829,7 @@ textarea {
     grid-template-columns: 1fr;
   }
   .spotlight {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
   .spotlight > img {
     height: 100%;
