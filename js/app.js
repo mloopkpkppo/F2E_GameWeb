@@ -165,7 +165,7 @@ function renderDeals() {
             </article>`,
         )
         .join('')
-    : '<div class="empty"><span class="pixel yellow">NO ACTIVE BONUS</span><h3>目前沒有可確認的特價</h3><p>可能是收錄作品目前沒有折扣，或 Steam 資料暫時無法取得。稍後可再更新。</p></div>';
+    : '<div class="empty"><h3>目前沒有可確認的特價</h3><p>可能是收錄作品目前沒有折扣，或 Steam 資料暫時無法取得。稍後可再更新。</p></div>';
 }
 async function loadCatalog() {
   $('#refresh').disabled = true;
@@ -285,7 +285,7 @@ function openGame(id) {
       <div class="dialog-top">
         <div>
           <span class="eyebrow lime"
-            >${g.solo ? 'SOLO DEVELOPER' : g.indie ? 'INDIE QUEST' : 'STEAM QUEST'}</span
+            >${g.solo ? '個人開發' : g.indie ? '獨立遊戲' : 'Steam 遊戲'}</span
           >
           <h2 id="dialog-title">${esc(g.name)}</h2>
           <p>${esc(g.zh)} · ${esc(g.genre)} · ${esc(g.developer)}</p>
@@ -607,7 +607,7 @@ async function loadAccount() {
       box.innerHTML = /* HTML */ `<div class="account-card">
         <div class="avatar-placeholder pixel" aria-hidden="true">P1</div>
         <div>
-          <h3>把你的 Steam 身分帶進來</h3>
+          <h3>使用 Steam 帳號登入</h3>
           <p>
             登入後可查看
             SteamID。${config.profileReady ? '還能讀取暱稱、頭像，以及公開的遊戲庫。' : '暱稱、頭像與遊戲庫將在網站管理者設定 API Key 後開放。'}
@@ -640,7 +640,7 @@ async function loadAccount() {
       box.innerHTML = /* HTML */ `<div class="account-card">
           ${avatar}
           <div class="player-info">
-            <p class="eyebrow lime">STEAM CONNECTED</p>
+            <p class="eyebrow lime">Steam 已登入</p>
             <h3>${esc(d.user.name || 'Steam 玩家')}</h3>
             <p class="steam-id">SteamID：${esc(d.user.steamid)}</p>
             <p>${esc(status)}</p>
