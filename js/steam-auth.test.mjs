@@ -109,7 +109,7 @@ test('verified login issues a session; the same callback cannot be replayed; fai
     const req = () =>
       new Request(origin + '/auth/steam/return?' + assertion(state), { headers: { cookie } });
     const ok = await handleSteamAuth(req(), env);
-    assert.equal(ok.headers.get('location'), '/?steam_login=success#account');
+    assert.equal(ok.headers.get('location'), '/account?steam_login=success');
     assert.equal(ok.headers.getSetCookie().length, 2);
     const sessionCookie = ok.headers
       .getSetCookie()

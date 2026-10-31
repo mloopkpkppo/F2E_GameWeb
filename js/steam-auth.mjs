@@ -160,7 +160,7 @@ export async function handleSteamAuth(request, env) {
   if (path === '/auth/steam/return' && request.method === 'GET') {
     const clear = cookie(n.state, '', origin, 0);
     if (url.searchParams.get('openid.mode') === 'cancel')
-      return redirect('/?steam_login=cancelled#account', [clear]);
+      return redirect('/account?steam_login=cancelled', [clear]);
     try {
       const state = await verifyToken(readCookie(request, n.state), secret, origin, 'state');
       if (!state || state.nonce !== url.searchParams.get('state')) throw Error('state');
@@ -184,20 +184,17 @@ export async function handleSteamAuth(request, env) {
         { kind: 'session', origin, steamid, exp: Date.now() + 8 * 3600000 },
         secret,
       );
-      return redirect('/?steam_login=success#account', [
+      return redirect('/account?steam_login=success', [
         clear,
         cookie(n.session, token, origin, 8 * 3600),
       ]);
     } catch {
-      return redirect('/?steam_login=failed#account', [clear]);
+      return redirect('/account?steam_login=failed', [clear]);
     }
   }
   if (path === '/auth/steam/logout' && request.method === 'POST') {
     if (request.headers.get('origin') !== origin) return authJSON({ error: '無效的請求來源' }, 403);
-    return redirect('/#account', [
-      cookie(n.session, '', origin, 0),
-      cookie(n.state, '', origin, 0),
-    ]);
+    return redirect('/account', [cookie(n.session, '', origin, 0), cookie(n.state, '', origin, 0)]);
   }
   if (path === '/api/me' && request.method === 'GET') {
     if (!user) return authJSON({ authenticated: false });

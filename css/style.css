@@ -352,13 +352,13 @@ nav {
   gap: 24px;
   margin-bottom: 30px;
 }
-.section-heading h2 {
+.section-heading :is(h1, h2) {
   font-size: var(--text-heading);
   line-height: 1.4;
   margin: 0 0 10px;
   letter-spacing: 1px;
 }
-.section-heading h2 > span {
+.section-heading :is(h1, h2) > span {
   margin-left: 10px;
 }
 .section-heading p:last-child {
@@ -1149,7 +1149,7 @@ body.modal-open {
   .section {
     padding-block: 45px;
   }
-  .section-heading h2 {
+  .section-heading :is(h1, h2) {
     font-size: var(--text-heading);
   }
   .section-heading {
@@ -1316,7 +1316,7 @@ body.modal-open {
     font-size: var(--text-body);
     background: #111423dd;
   }
-  .section-heading h2 {
+  .section-heading :is(h1, h2) {
     font-size: var(--text-body);
   }
   .section-heading > span {
@@ -1727,7 +1727,7 @@ h2 {
   font-size: var(--text-heading);
   line-height: 1.4;
 }
-.section-heading h2,
+.section-heading :is(h1, h2),
 .dialog-top h2 {
   font-size: var(--text-heading);
 }
@@ -1880,5 +1880,32 @@ textarea {
   }
   .library-row {
     flex-wrap: wrap;
+  }
+}
+
+main {
+  min-height: calc(100dvh - 190px);
+}
+.saved-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.section-heading h1 {
+  margin: 0 0 10px;
+  font-size: var(--text-heading);
+  line-height: 1.4;
+}
+.steam-nav[aria-current='page'] {
+  background: #c0f57913;
+  border-color: var(--lime);
+}
+@media (max-width: 480px) {
+  .header nav {
+    gap: 8px;
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 45px;
   }
 }

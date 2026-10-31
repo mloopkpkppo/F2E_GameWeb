@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101322" />
+    <meta
+      name="description"
+      content="在 PIXEL QUEST 探索 Steam 與獨立遊戲，閱讀介紹、查看台灣區優惠與玩家評價。"
+    />
+    <title>玩家評價｜PIXEL QUEST</title>
+    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <script type="module" src="/js/app.js"></script>
+  </head>
+  <body data-page="community">
+    <a class="skip" href="#main-content">跳至主要內容</a>
+    <header class="header">
+      <div class="nav-wrap">
+        <a class="brand" href="/" aria-label="PIXEL QUEST 首頁"
+          ><span class="brand-icon" aria-hidden="true">✚</span
+          ><span>PIXEL<span class="lime">QUEST</span></span></a
+        >
+        <nav aria-label="主要選單">
+          <a href="/games" class="nav-link">遊戲探索</a
+          ><a href="/indie" class="nav-link">獨立遊戲<span class="nav-dot"></span></a
+          ><a href="/deals" class="nav-link">特價優惠</a
+          ><a href="/community" class="nav-link active" aria-current="page">玩家評價</a>
+        </nav>
+        <div class="nav-actions">
+          <a id="steam-nav" class="steam-nav" href="/account">Steam 帳號 ↗</a
+          ><a id="saved-nav" class="saved-nav" href="/games?filter=saved"
+            ><span aria-hidden="true">♡</span> 收藏清單 <b id="saved-count">0</b></a
+          >
+        </div>
+      </div>
+    </header>
+    <main id="main-content">
+      <section id="community" class="section community-section">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <h1>玩家評價</h1>
+              <p>閱讀 Steam 玩家對遊戲的實際心得。</p>
+            </div>
+            <button class="button outline" data-open="413150">留下你的心得 ↗</button>
+          </div>
+          <div id="community-grid" class="community-grid">
+            <div class="empty"><p>正在取得 Steam 玩家評論…</p></div>
+          </div>
+          <p class="fine-print">
+            Steam
+            評論為外部玩家內容，保留原文。網站試用留言只儲存在你的瀏覽器，不會公開或跨裝置同步。
+          </p>
+        </div>
+      </section>
+    </main>
+    <footer class="container footer">
+      <a class="brand" href="/"
+        ><span class="brand-icon" aria-hidden="true">✚</span
+        ><span>PIXEL<span class="lime">QUEST</span></span></a
+      >
+      <span>獨立遊戲探索專案 · V1.0<br />非 Valve 或 Steam 官方網站</span>
+    </footer>
+    <dialog id="game-dialog" aria-labelledby="dialog-title">
+      <div id="dialog-content"></div>
+      <button id="close-dialog" class="close-dialog" aria-label="關閉遊戲介紹">✕</button>
+    </dialog>
+    <div id="toast" class="toast" role="status" hidden></div>
+  </body>
+</html>

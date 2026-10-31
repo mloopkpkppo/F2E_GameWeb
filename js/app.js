@@ -6,6 +6,8 @@ const esc = (v) =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
   );
 const validId = (id) => catalog.some((g) => g.id === Number(id));
+const page = document.body.dataset.page;
+const filter = new URLSearchParams(location.search).get('filter');
 function readStorage(key, fallback) {
   try {
     return JSON.parse(localStorage.getItem(key)) ?? fallback;
@@ -22,10 +24,13 @@ function writeStorage(key, value) {
     return false;
   }
 }
-const stored = readStorage('pq-saved', []);
-let saved = new Set(Array.isArray(stored) ? stored.filter(validId).map(Number) : []);
+function readSaved() {
+  const stored = readStorage('pq-saved', []);
+  return new Set(Array.isArray(stored) ? stored.filter(validId).map(Number) : []);
+}
+let saved = readSaved();
 let games = catalog.map((g) => ({ ...g, price: null })),
-  type = 'all',
+  type = ['saved', 'indie', 'solo'].includes(filter) ? filter : 'all',
   query = '',
   genre = 'all',
   sort = 'featured',
@@ -105,7 +110,10 @@ function card(g) {
   </article>`;
 }
 function render() {
-  let list = games.filter(
+  $('#saved-count').textContent = saved.size;
+  if (!$('#game-grid')) return;
+  const availableGames = page === 'indie' ? games.filter((g) => g.indie) : games;
+  let list = availableGames.filter(
     (g) =>
       (type !== 'indie' || g.indie) &&
       (type !== 'solo' || g.solo) &&
@@ -118,17 +126,19 @@ function render() {
     list.sort((a, b) => (b.price?.discount ?? -1) - (a.price?.discount ?? -1));
   if (sort === 'price')
     list.sort((a, b) => (a.price?.final ?? Infinity) - (b.price?.final ?? Infinity));
+  const limit = Number($('#game-grid').dataset.limit);
+  if (limit > 0) list = list.slice(0, limit);
   $('#game-grid').innerHTML = list.map(card).join('');
   $('#empty').hidden = list.length > 0;
-  $('#result-count').textContent = `顯示 ${list.length} 款 / 共收錄 ${games.length} 款遊戲`;
-  $('#saved-count').textContent = saved.size;
-  $('#saved-nav').setAttribute('aria-pressed', String(type === 'saved'));
+  $('#result-count').textContent =
+    `顯示 ${list.length} 款 / 共收錄 ${availableGames.length} 款遊戲`;
   document.querySelectorAll('[data-type]').forEach((b) => {
     b.classList.toggle('selected', b.dataset.type === type);
     b.setAttribute('aria-pressed', String(b.dataset.type === type));
   });
 }
 function renderDeals() {
+  if (!$('#deals-grid')) return;
   const list = games
     .filter((g) => g.price?.discount > 0 && !g.stale)
     .sort((a, b) => b.price.discount - a.price.discount)
@@ -168,6 +178,7 @@ function renderDeals() {
     : '<div class="empty"><h3>目前沒有可確認的特價</h3><p>可能是收錄作品目前沒有折扣，或 Steam 資料暫時無法取得。稍後可再更新。</p></div>';
 }
 async function loadCatalog() {
+  if (!$('#data-status')) return;
   $('#refresh').disabled = true;
   $('#data-status').textContent = '正在取得 Steam 台灣區價格…';
   try {
@@ -249,6 +260,7 @@ async function getDetail(id) {
   return d;
 }
 async function loadCommunity() {
+  if (!$('#community-grid')) return;
   const picks = [413150, 2379780, 367520];
   const results = await Promise.allSettled(
     picks.map(async (id) => {
@@ -486,6 +498,12 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('#retry-account')) loadAccount();
 });
 document.addEventListener('submit', (e) => {
+  if (e.target.matches('form[action="/auth/steam/logout"]')) {
+    try {
+      sessionStorage.removeItem('pq-owned');
+    } catch {}
+    return;
+  }
   if (e.target.id !== 'comment-form') return;
   e.preventDefault();
   const form = e.target,
@@ -507,37 +525,37 @@ document.addEventListener('submit', (e) => {
     toast('心得已保存在此瀏覽器。');
   }
 });
-$('#search').addEventListener('input', (e) => {
+$('#search')?.addEventListener('input', (e) => {
   query = e.target.value.trim().toLowerCase();
   render();
 });
-$('#genre').innerHTML += [...new Set(catalog.map((g) => g.genre))]
-  .map((g) => /* HTML */ `<option>${esc(g)}</option>`)
-  .join('');
-$('#genre').addEventListener('change', (e) => {
+if ($('#genre')) {
+  $('#genre').innerHTML += [
+    ...new Set(catalog.filter((g) => page !== 'indie' || g.indie).map((g) => g.genre)),
+  ]
+    .map((g) => /* HTML */ `<option>${esc(g)}</option>`)
+    .join('');
+}
+$('#genre')?.addEventListener('change', (e) => {
   genre = e.target.value;
   render();
 });
-$('#sort').addEventListener('change', (e) => {
+$('#sort')?.addEventListener('change', (e) => {
   sort = e.target.value;
   render();
 });
-$('#reset-filters').addEventListener('click', () => {
+$('#reset-filters')?.addEventListener('click', () => {
   query = '';
   genre = 'all';
   sort = 'featured';
-  $('#search').value = '';
-  $('#genre').value = 'all';
-  $('#sort').value = 'featured';
+  if ($('#search')) $('#search').value = '';
+  if ($('#genre')) $('#genre').value = 'all';
+  if ($('#sort')) $('#sort').value = 'featured';
   setType('all');
 });
-$('#refresh').addEventListener('click', loadCatalog);
-$('#all-indie').addEventListener('click', () => {
-  setType('indie');
-  $('#explore').scrollIntoView();
-});
-$('#saved-nav').addEventListener('click', () => {
-  setType(type === 'saved' ? 'all' : 'saved');
+$('#refresh')?.addEventListener('click', loadCatalog);
+$('#all-indie')?.addEventListener('click', () => {
+  setType('all');
   $('#explore').scrollIntoView();
 });
 $('#close-dialog').addEventListener('click', () => dialog.close());
@@ -560,6 +578,7 @@ dialog.addEventListener('close', () => {
 document.addEventListener('keydown', (e) => {
   if (
     e.key === '/' &&
+    $('#search') &&
     !dialog.open &&
     !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)
   ) {
@@ -568,21 +587,9 @@ document.addEventListener('keydown', (e) => {
     $('#explore').scrollIntoView();
   }
 });
-const observer = new IntersectionObserver(
-  (entries) => {
-    for (const entry of entries)
-      if (entry.isIntersecting)
-        document
-          .querySelectorAll('.nav-link')
-          .forEach((a) => a.classList.toggle('active', a.hash === '#' + entry.target.id));
-  },
-  { rootMargin: '-15% 0px -65% 0px' },
-);
-['explore', 'indie', 'deals', 'community'].forEach((id) =>
-  observer.observe(document.getElementById(id)),
-);
 async function loadAccount() {
   const box = $('#account-content');
+  if (!box) return;
   try {
     const c = await fetch('/auth/steam/config', { cache: 'no-store' });
     if (!c.ok) throw Error();
@@ -737,6 +744,12 @@ async function loadLibrary() {
       return;
     }
     ownedGames = d.games;
+    try {
+      sessionStorage.setItem(
+        'pq-owned',
+        JSON.stringify({ steamid: currentUser.steamid, ids: d.games.map((game) => game.id) }),
+      );
+    } catch {}
     libraryLimit = 25;
     renderLibrary();
     render();
@@ -746,7 +759,50 @@ async function loadLibrary() {
     b.disabled = false;
   }
 }
-render();
-loadCatalog();
-loadCommunity();
-loadAccount();
+async function restoreOwnedGames() {
+  if (!$('#game-grid')) return;
+  ownedGames = null;
+  render();
+  try {
+    const response = await fetch('/api/me', { cache: 'no-store' });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!data.authenticated) {
+      sessionStorage.removeItem('pq-owned');
+      return;
+    }
+    const stored = JSON.parse(sessionStorage.getItem('pq-owned'));
+    if (stored?.steamid === data.user.steamid && Array.isArray(stored.ids)) {
+      ownedGames = stored.ids.filter((id) => Number.isInteger(id) && id > 0).map((id) => ({ id }));
+      render();
+    } else {
+      sessionStorage.removeItem('pq-owned');
+    }
+  } catch {
+    // 分頁儲存或 Steam 驗證不可用時，仍可使用一般遊戲瀏覽。
+  }
+}
+window.addEventListener('pageshow', (event) => {
+  if (!event.persisted) return;
+  saved = readSaved();
+  render();
+  restoreOwnedGames();
+  loadAccount();
+});
+// 保留舊書籤可用；一般選單直接連到各自的 HTML 頁面。
+const legacyPages = {
+  '#explore': '/games',
+  '#indie': '/indie',
+  '#deals': '/deals',
+  '#community': '/community',
+  '#account': '/account',
+};
+if (location.pathname === '/' && legacyPages[location.hash]) {
+  location.replace(legacyPages[location.hash] + location.search);
+} else {
+  render();
+  loadCatalog();
+  loadCommunity();
+  loadAccount();
+  restoreOwnedGames();
+}

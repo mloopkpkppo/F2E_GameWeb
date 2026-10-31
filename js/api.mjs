@@ -144,7 +144,21 @@ export function createHandler(assets = {}) {
       });
     }
     if (path.startsWith('/api/')) return json({ error: '找不到資料' }, 404);
-    const asset = assets[path === '/' ? '/index.html' : path];
+    const pages = {
+      '/': '/index.html',
+      '/games': '/games.html',
+      '/indie': '/indie.html',
+      '/deals': '/deals.html',
+      '/community': '/community.html',
+      '/account': '/account.html',
+    };
+    if (path.endsWith('/') && pages[path.slice(0, -1)]) {
+      return new Response(null, {
+        status: 308,
+        headers: { Location: path.slice(0, -1) + url.search },
+      });
+    }
+    const asset = assets[pages[path] || path];
     if (!asset) return new Response('Not found', { status: 404 });
     return new Response(asset.body, {
       headers: {

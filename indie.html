@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101322" />
+    <meta
+      name="description"
+      content="在 PIXEL QUEST 探索 Steam 與獨立遊戲，閱讀介紹、查看台灣區優惠與玩家評價。"
+    />
+    <title>獨立與個人開發遊戲｜PIXEL QUEST</title>
+    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <script type="module" src="/js/app.js"></script>
+  </head>
+  <body data-page="indie">
+    <a class="skip" href="#main-content">跳至主要內容</a>
+    <header class="header">
+      <div class="nav-wrap">
+        <a class="brand" href="/" aria-label="PIXEL QUEST 首頁"
+          ><span class="brand-icon" aria-hidden="true">✚</span
+          ><span>PIXEL<span class="lime">QUEST</span></span></a
+        >
+        <nav aria-label="主要選單">
+          <a href="/games" class="nav-link">遊戲探索</a
+          ><a href="/indie" class="nav-link active" aria-current="page"
+            >獨立遊戲<span class="nav-dot"></span></a
+          ><a href="/deals" class="nav-link">特價優惠</a
+          ><a href="/community" class="nav-link">玩家評價</a>
+        </nav>
+        <div class="nav-actions">
+          <a id="steam-nav" class="steam-nav" href="/account">Steam 帳號 ↗</a
+          ><a id="saved-nav" class="saved-nav" href="/games?filter=saved"
+            ><span aria-hidden="true">♡</span> 收藏清單 <b id="saved-count">0</b></a
+          >
+        </div>
+      </div>
+    </header>
+    <main id="main-content">
+      <section id="indie" class="indie-section">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <h1>獨立與個人開發遊戲</h1>
+              <p>查看獨立團隊與個人開發者的作品。</p>
+            </div>
+            <button id="all-indie" class="text-link">探索獨立遊戲 →</button>
+          </div>
+          <div class="spotlights">
+            <article class="spotlight">
+              <img
+                src="/images/413150.jpg"
+                width="460"
+                height="215"
+                alt="Stardew Valley 遊戲封面"
+                loading="lazy"
+              />
+              <div>
+                <span class="label purple">個人開發起家</span>
+                <p class="tiny muted">CONCERNEDAPE</p>
+                <h3>Stardew Valley｜星露谷物語</h3>
+                <p>農場經營遊戲，包含種植、釣魚、採礦與多人合作。</p>
+                <button class="text-link" data-open="413150">認識 Stardew Valley →</button>
+              </div>
+            </article>
+            <article class="spotlight">
+              <img
+                src="/images/2379780.jpg"
+                width="460"
+                height="215"
+                alt="Balatro 遊戲封面"
+                loading="lazy"
+              />
+              <div>
+                <span class="label purple">個人開發</span>
+                <p class="tiny muted">LOCALTHUNK</p>
+                <h3>Balatro｜小丑牌</h3>
+                <p>以撲克牌型與小丑牌組合分數的策略卡牌遊戲。</p>
+                <button class="text-link" data-open="2379780">認識 Balatro →</button>
+              </div>
+            </article>
+          </div>
+          <p class="indie-note">
+            「個人開發」依作品原始開發背景編輯標註；不代表美術、音樂或後續版本均由一人完成。
+          </p>
+        </div>
+      </section>
+      <section id="explore" class="section container">
+        <div class="section-heading">
+          <div>
+            <h2>獨立遊戲列表</h2>
+            <p>依遊戲名稱、類型或開發者篩選。</p>
+          </div>
+        </div>
+        <div class="toolbar">
+          <label class="search"
+            ><svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <circle cx="10" cy="10" r="6" />
+              <path d="m15 15 6 6" /></svg
+            ><input
+              id="search"
+              type="search"
+              placeholder="搜尋遊戲名稱、開發者…"
+              aria-label="搜尋遊戲名稱或開發者"
+            /><kbd>/</kbd></label
+          ><label class="sort"
+            ><span>排序</span
+            ><select id="sort">
+              <option value="featured">編輯精選</option>
+              <option value="discount">折扣最高</option>
+              <option value="price">價格由低到高</option>
+              <option value="name">名稱 A–Z</option>
+            </select></label
+          >
+        </div>
+        <div class="filter-bar">
+          <div id="type-filters" class="chips" aria-label="遊戲分類">
+            <button class="chip selected" data-type="all" aria-pressed="true">全部獨立遊戲</button
+            ><button class="chip" data-type="solo" aria-pressed="false">個人開發</button
+            ><button class="chip" data-type="saved" aria-pressed="false">我的收藏</button>
+          </div>
+          <label
+            ><span class="sr-only">遊戲類型</span
+            ><select id="genre">
+              <option value="all">所有類型</option>
+            </select></label
+          >
+        </div>
+        <div class="results-line">
+          <span id="result-count" role="status">已收錄 12 款精選遊戲</span
+          ><button id="refresh" class="subtle-button">↻ 更新商店資料</button>
+        </div>
+        <p id="data-status" class="data-status" role="status">
+          正在連接 Steam 台灣商店，取得價格與發售資訊…
+        </p>
+        <div id="game-grid" class="game-grid"></div>
+        <div id="empty" class="empty" hidden>
+          <h3>這次沒有找到遊戲</h3>
+          <p>換個關鍵字或分類，再探索一次。</p>
+          <button id="reset-filters" class="button primary">清除篩選</button>
+        </div>
+        <div class="list-footer">
+          <span>價格以 Steam 結帳頁為準。</span
+          ><a href="/deals" class="text-link">看看有哪些優惠 ↓</a>
+        </div>
+      </section>
+    </main>
+    <footer class="container footer">
+      <a class="brand" href="/"
+        ><span class="brand-icon" aria-hidden="true">✚</span
+        ><span>PIXEL<span class="lime">QUEST</span></span></a
+      >
+      <span>獨立遊戲探索專案 · V1.0<br />非 Valve 或 Steam 官方網站</span>
+    </footer>
+    <dialog id="game-dialog" aria-labelledby="dialog-title">
+      <div id="dialog-content"></div>
+      <button id="close-dialog" class="close-dialog" aria-label="關閉遊戲介紹">✕</button>
+    </dialog>
+    <div id="toast" class="toast" role="status" hidden></div>
+  </body>
+</html>

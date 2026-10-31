@@ -20,10 +20,12 @@ export async function loadAssets() {
       if (type)
         assets['/' + dir + '/' + name] = { body: await readFile(path.join(root, dir, name)), type };
     }
-  assets['/index.html'] = {
-    body: await readFile(path.join(root, 'index.html')),
-    type: 'text/html; charset=utf-8',
-  };
+  for (const name of (await readdir(root)).filter((name) => name.endsWith('.html'))) {
+    assets['/' + name] = {
+      body: await readFile(path.join(root, name)),
+      type: 'text/html; charset=utf-8',
+    };
+  }
   return assets;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

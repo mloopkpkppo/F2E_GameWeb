@@ -1,6 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHandler, cached, normalizePrice } from './api.mjs';
+import { loadAssets } from './server.mjs';
+
+test('separate pages support direct navigation, refresh, and HTML files without a catch-all fallback', async () => {
+  const handler = createHandler(await loadAssets());
+  for (const [route, page] of [
+    ['/', 'home'],
+    ['/games', 'games'],
+    ['/indie', 'indie'],
+    ['/deals', 'deals'],
+    ['/community', 'community'],
+    ['/account', 'account'],
+  ]) {
+    const response = await handler(new Request('https://test' + route));
+    assert.equal(response.status, 200, route);
+    const html = await response.text();
+    assert.match(html, new RegExp('data-page="' + page + '"'));
+    assert.equal((html.match(/<h1\b/g) || []).length, 1, route + ' has one page title');
+    assert.doesNotMatch(html, /href="#(?:indie|deals|community|account)"/);
+    if (page !== 'indie') assert.doesNotMatch(html, /id="indie"/);
+    if (page !== 'deals') assert.doesNotMatch(html, /id="deals-grid"/);
+  }
+  assert.equal((await handler(new Request('https://test/indie.html'))).status, 200);
+  const trailing = await handler(new Request('https://test/games/?filter=saved'));
+  assert.equal(trailing.status, 308);
+  assert.equal(trailing.headers.get('location'), '/games?filter=saved');
+  assert.equal((await handler(new Request('https://test/no-such-page'))).status, 404);
+});
 test('missing price is unknown, not free; prices remain integer minor units', () => {
   assert.equal(normalizePrice({}), null);
   assert.equal(normalizePrice({ is_free: true }).free, true);

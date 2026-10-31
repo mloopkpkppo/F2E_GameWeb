@@ -22,7 +22,12 @@ npm run format:check
 
 ## 資料夾
 
-- index.html：網頁結構與文案。
+- index.html：首頁與精選遊戲。
+- games.html：所有遊戲、搜尋與篩選。
+- indie.html：獨立與個人開發遊戲。
+- deals.html：特價優惠。
+- community.html：玩家評價。
+- account.html：Steam 登入、個人資料與遊戲庫。
 - css/style.css：全站樣式、手機版排版。
 - images/：本地遊戲封面、原創像素主視覺與圖示。
 - js/app.js：前端搜尋、篩選、排序、收藏、試用留言。
@@ -32,8 +37,25 @@ npm run format:check
 - js/download-assets.mjs：依精選名單下載封面。
 - js/api.test.mjs：資料處理與 API 保護測試。
 - js/build.mjs：部署封裝程式。
-- .openai/hosting.json：私人預覽站設定，無金鑰。
+- .openai/hosting.json：線上網站設定，無金鑰。
 - dist/：執行 npm run build 產生的部署檔案，不用直接編輯。
+
+## 分頁網址與分工
+
+每個主要頁面使用獨立 HTML 檔案，共用 css/style.css、js/app.js 和圖片。修改自己的頁面即可；導覽列與頁尾位於各頁 HTML，調整共用選單時請同步各頁。
+
+| 網址       | HTML 檔案      |
+| ---------- | -------------- |
+| /          | index.html     |
+| /games     | games.html     |
+| /indie     | indie.html     |
+| /deals     | deals.html     |
+| /community | community.html |
+| /account   | account.html   |
+
+透過 npm start 或正式網站開啟這些路徑，直接輸入網址及重新整理都可使用。舊的 /#indie、/#deals 等書籤會轉到新頁面；收藏清單位於 /games?filter=saved。
+
+Steam 登入成功、取消、失敗及登出都會回到 /account。完整遊戲庫仍只在主動讀取時取得；為了跨頁標示已擁有的遊戲，僅把帳號對應的遊戲編號暫存於 sessionStorage，使用前重新驗證登入身分，登出時清除。這不會同步收藏或留言到其他裝置。
 
 ## 第一版功能
 

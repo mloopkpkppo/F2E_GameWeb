@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101322" />
+    <meta
+      name="description"
+      content="在 PIXEL QUEST 探索 Steam 與獨立遊戲，閱讀介紹、查看台灣區優惠與玩家評價。"
+    />
+    <title>Steam 個人資料｜PIXEL QUEST</title>
+    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <script type="module" src="/js/app.js"></script>
+  </head>
+  <body data-page="account">
+    <a class="skip" href="#main-content">跳至主要內容</a>
+    <header class="header">
+      <div class="nav-wrap">
+        <a class="brand" href="/" aria-label="PIXEL QUEST 首頁"
+          ><span class="brand-icon" aria-hidden="true">✚</span
+          ><span>PIXEL<span class="lime">QUEST</span></span></a
+        >
+        <nav aria-label="主要選單">
+          <a href="/games" class="nav-link">遊戲探索</a
+          ><a href="/indie" class="nav-link">獨立遊戲<span class="nav-dot"></span></a
+          ><a href="/deals" class="nav-link">特價優惠</a
+          ><a href="/community" class="nav-link">玩家評價</a>
+        </nav>
+        <div class="nav-actions">
+          <a id="steam-nav" class="steam-nav" aria-current="page" href="/account">Steam 帳號 ↗</a
+          ><a id="saved-nav" class="saved-nav" href="/games?filter=saved"
+            ><span aria-hidden="true">♡</span> 收藏清單 <b id="saved-count">0</b></a
+          >
+        </div>
+      </div>
+    </header>
+    <main id="main-content">
+      <section
+        id="account"
+        class="section container account-section"
+        aria-labelledby="account-title"
+      >
+        <div class="section-heading">
+          <div>
+            <h1 id="account-title">Steam 個人資料</h1>
+            <p>登入後可查看 SteamID，並讀取可取得的個人資料。</p>
+          </div>
+          <span class="region-label">選擇性登入</span>
+        </div>
+        <div id="account-notice" role="status"></div>
+        <div id="account-content" aria-live="polite">
+          <p class="muted">正在確認 Steam 登入設定…</p>
+        </div>
+        <details class="privacy-details">
+          <summary>登入後會使用哪些資料？</summary>
+          <p>
+            讀取遊戲庫後，已擁有的遊戲編號會暫存在本分頁，用於其他頁面的「已擁有」標示，登出時清除。
+          </p>
+          <p>
+            Steam 負責密碼與登入確認；本站只接收驗證後的
+            SteamID。設定網站金鑰後，可讀取暱稱、頭像與個人檔案連結；遊戲庫與時數只在你點擊「讀取我的遊戲庫」時查詢，並遵守
+            Steam 隱私設定。
+          </p>
+          <p>
+            登入憑證保存在此瀏覽器的 HttpOnly Cookie，最長 8
+            小時。本站目前不永久保存個人檔案或遊戲庫；登入驗證紀錄只保存隨機識別碼與期限，用於阻擋重複回呼。收藏和試用留言仍只保存在此瀏覽器，不會因登入自動跨裝置同步。
+          </p>
+          <p>
+            資料處理：本機版本在你的電腦執行；線上版透過 Cloudflare
+            網路處理登入與資料查詢，處理地點可能跨國。你可隨時登出以清除本機登入 Cookie。
+          </p>
+        </details>
+      </section>
+    </main>
+    <footer class="container footer">
+      <a class="brand" href="/"
+        ><span class="brand-icon" aria-hidden="true">✚</span
+        ><span>PIXEL<span class="lime">QUEST</span></span></a
+      >
+      <span>獨立遊戲探索專案 · V1.0<br />非 Valve 或 Steam 官方網站</span>
+    </footer>
+    <dialog id="game-dialog" aria-labelledby="dialog-title">
+      <div id="dialog-content"></div>
+      <button id="close-dialog" class="close-dialog" aria-label="關閉遊戲介紹">✕</button>
+    </dialog>
+    <div id="toast" class="toast" role="status" hidden></div>
+  </body>
+</html>
