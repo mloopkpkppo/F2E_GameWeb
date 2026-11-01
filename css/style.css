@@ -17,6 +17,121 @@
   --text-heading: 2rem;
   --pixel: 'DotGothic16', monospace;
 }
+.sale-event {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  margin: 25px 0 40px;
+}
+.sale-event > a {
+  display: block;
+}
+.sale-event img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.sale-event-content {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  padding: 28px;
+}
+.sale-event h2 {
+  font-size: var(--text-heading);
+  margin: 12px 0;
+}
+.sale-event p {
+  color: var(--muted);
+  line-height: 1.9;
+  margin: 0;
+}
+.sale-event-end {
+  display: grid;
+  gap: 10px;
+  font-size: var(--text-small);
+  color: var(--muted);
+  align-content: center;
+}
+.sale-event-end strong {
+  font-size: var(--text-body);
+  color: var(--lime);
+  font-variant-numeric: tabular-nums;
+}
+.sale-event-end .button {
+  margin-top: 6px;
+}
+.sale-calendar {
+  margin-block: 40px;
+}
+.sale-calendar h2,
+.discount-list-title {
+  font-size: var(--text-body);
+}
+.sale-calendar .section-heading {
+  margin-bottom: 16px;
+}
+.sale-calendar .section-heading p {
+  font-size: var(--text-small);
+}
+.sale-time-note {
+  font-size: var(--text-small);
+  color: var(--muted);
+  line-height: 1.9;
+}
+.sale-calendar-list {
+  border: 1px solid var(--line);
+}
+.sale-calendar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: var(--surface);
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.sale-calendar-row:last-child {
+  border-bottom: 0;
+}
+.sale-calendar-row h3 {
+  margin: 8px 0;
+  font-size: var(--text-body);
+}
+.sale-calendar-row p {
+  color: var(--muted);
+  font-size: var(--text-small);
+  margin: 8px 0 0;
+  line-height: 1.8;
+}
+.sale-calendar-row > span {
+  color: var(--text);
+  font-size: var(--text-body);
+  font-variant-numeric: tabular-nums;
+}
+.sale-calendar-row small {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.sale-calendar-row.seasonal {
+  border-left: 3px solid var(--lime);
+}
+.sale-more summary {
+  color: var(--cyan);
+  cursor: pointer;
+  padding: 18px 0;
+  font-size: var(--text-small);
+}
+@media (max-width: 700px) {
+  .sale-event-content {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 20px;
+  }
+  .sale-calendar-row {
+    padding: 18px;
+  }
+}
 .mini-section {
   padding-block: 60px 80px;
 }

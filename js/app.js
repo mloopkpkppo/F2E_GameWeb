@@ -180,6 +180,19 @@ function renderDeals() {
         .join('')
     : '<div class="empty"><h3>目前沒有可確認的特價</h3><p>可能是收錄作品目前沒有折扣，或 Steam 資料暫時無法取得。稍後可再更新。</p></div>';
 }
+function updateSaleEvent() {
+  const event = $('.sale-event');
+  const status = $('#scream-status');
+  if (!event || !status) return;
+  const now = Date.now();
+  status.textContent =
+    now >= Date.parse(event.dataset.end)
+      ? '活動已結束'
+      : now < Date.parse(event.dataset.start)
+        ? '即將開始'
+        : '正在進行';
+}
+setInterval(updateSaleEvent, 60000);
 async function loadCatalog() {
   if (!$('#data-status')) return;
   const version = viewVersion;
@@ -989,6 +1002,7 @@ window.addEventListener('pageshow', (event) => {
   loadAccount();
 });
 function initializePage() {
+  updateSaleEvent();
   page = document.body.dataset.page;
   const selected = new URLSearchParams(location.search).get('filter');
   type = ['saved', 'indie', 'solo'].includes(selected) ? selected : 'all';
