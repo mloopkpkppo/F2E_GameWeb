@@ -697,16 +697,37 @@ async function loadAccount() {
           </div>
         </div>`;
     }
-    const outcome = new URL(location.href).searchParams.get('steam_login');
+    const resultParams = new URL(location.href).searchParams;
+    const outcome = resultParams.get('steam_login');
     if (outcome) {
       $('#account-notice').textContent =
         {
           success: 'Steam 登入成功。',
           cancelled: '你已取消 Steam 登入，可以繼續瀏覽。',
-          failed: 'Steam 登入未通過驗證，可能是連線中斷、回呼過期或瀏覽器封鎖 Cookie。請重新登入。',
+          failed:
+            {
+              state_missing:
+                'Steam 登入返回時沒有收到驗證 Cookie。請在同一瀏覽器開啟網站並重新登入；若持續發生，請檢查網站的 Cookie 設定。',
+              state_invalid:
+                '這次登入的驗證資料已過期或失效。請從本站重新按 Steam 登入，並在 10 分鐘內完成。',
+              state_mismatch: '登入資料與這次操作不一致。請關閉其他登入分頁，再從本站重新登入。',
+              assertion_invalid:
+                'Steam 回傳的登入資料未通過安全檢查。請重新登入；若持續發生，請將查詢編號提供給網站管理者。',
+              steam_unavailable: '網站暫時無法連上 Steam 驗證服務，請稍後重新登入。',
+              steam_rejected:
+                'Steam 未確認這次登入。請從本站重新登入，避免重新整理先前的登入回呼頁面。',
+              storage_unavailable: '網站的登入驗證儲存服務暫時異常，請將查詢編號提供給網站管理者。',
+              callback_used: '這次登入回呼已經使用過。請回到本站重新按 Steam 登入。',
+              session_failed: '網站無法建立登入狀態，請將查詢編號提供給網站管理者。',
+            }[resultParams.get('reason')] || 'Steam 登入未通過驗證，請從本站重新登入。',
         }[outcome] || '';
+      const reference = resultParams.get('ref') || '';
+      if (outcome === 'failed' && /^[0-9a-f-]{36}$/.test(reference))
+        $('#account-notice').textContent += ' 查詢編號：' + reference;
       const clean = new URL(location.href);
       clean.searchParams.delete('steam_login');
+      clean.searchParams.delete('reason');
+      clean.searchParams.delete('ref');
       history.replaceState(null, '', clean.pathname + clean.search + clean.hash);
     }
   } catch {

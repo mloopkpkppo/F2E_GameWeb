@@ -161,25 +161,39 @@ export async function handleSteamAuth(request, env) {
     const clear = cookie(n.state, '', origin, 0);
     if (url.searchParams.get('openid.mode') === 'cancel')
       return redirect('/account?steam_login=cancelled', [clear]);
+    let failure = 'state_missing';
     try {
-      const state = await verifyToken(readCookie(request, n.state), secret, origin, 'state');
-      if (!state || state.nonce !== url.searchParams.get('state')) throw Error('state');
+      const stateCookie = readCookie(request, n.state);
+      if (!stateCookie) throw Error();
+      failure = 'state_invalid';
+      const state = await verifyToken(stateCookie, secret, origin, 'state');
+      if (!state) throw Error();
+      failure = 'state_mismatch';
+      if (state.nonce !== url.searchParams.get('state')) throw Error();
+      failure = 'assertion_invalid';
       const steamid = validateAssertion(url.searchParams, origin, state.nonce);
       const params = new URLSearchParams(
         [...url.searchParams].filter(([k]) => k.startsWith('openid.')),
       );
       params.set('openid.mode', 'check_authentication');
+      failure = 'steam_unavailable';
       const verified = await fetch(OPENID, {
         method: 'POST',
         body: params,
         signal: AbortSignal.timeout(10000),
         redirect: 'error',
       });
-      if (!verified.ok || !/^is_valid:true\r?$/m.test(await verified.text()))
-        throw Error('invalid');
+      if (!verified.ok) throw Error();
+      const verification = await verified.text();
+      failure = 'steam_rejected';
+      if (!/^is_valid:true\r?$/m.test(verification)) throw Error();
       // 持久儲存保證同一登入回呼只能使用一次，跨伺服器也不會重播。
-      if (!env.claimLogin || !(await env.claimLogin(state.nonce, Date.now() + 600000)))
-        throw Error('replay');
+      failure = 'storage_unavailable';
+      if (!env.claimLogin) throw Error();
+      const claimed = await env.claimLogin(state.nonce, Date.now() + 600000);
+      failure = 'callback_used';
+      if (!claimed) throw Error();
+      failure = 'session_failed';
       const token = await signToken(
         { kind: 'session', origin, steamid, exp: Date.now() + 8 * 3600000 },
         secret,
@@ -189,7 +203,14 @@ export async function handleSteamAuth(request, env) {
         cookie(n.session, token, origin, 8 * 3600),
       ]);
     } catch {
-      return redirect('/account?steam_login=failed', [clear]);
+      const reference = crypto.randomUUID();
+      // 僅記錄步驟與查詢編號，避免把 Cookie、簽章或使用者資料寫入紀錄。
+      console.warn(JSON.stringify({ event: 'steam_login_failed', reason: failure, reference }));
+      return redirect(
+        '/account?' +
+          new URLSearchParams({ steam_login: 'failed', reason: failure, ref: reference }),
+        [clear],
+      );
     }
   }
   if (path === '/auth/steam/logout' && request.method === 'POST') {

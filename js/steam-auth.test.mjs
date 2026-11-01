@@ -187,3 +187,66 @@ test('only the current verified account is queried; private library is not repor
     globalThis.fetch = old;
   }
 });
+
+test('callback failures identify the step without logging cookies, identity or assertions', async () => {
+  const env = environment();
+  const { state, cookie } = await loginStart(env);
+  const oldFetch = globalThis.fetch;
+  const oldWarn = console.warn;
+  const logs = [];
+  console.warn = (message) => logs.push(JSON.parse(message));
+  globalThis.fetch = async () => new Response('is_valid:true\n');
+  const cases = [
+    { cookie: '', reason: 'state_missing' },
+    { cookie: '__Host-pq_steam_state=broken', reason: 'state_invalid' },
+    { cookie, state: 'another-login', reason: 'state_mismatch' },
+    { cookie, malformed: true, reason: 'assertion_invalid' },
+    {
+      cookie,
+      env: {
+        ...env,
+        claimLogin: async () => {
+          throw Error('database failed');
+        },
+      },
+      reason: 'storage_unavailable',
+    },
+    { cookie, env: { ...env, claimLogin: async () => false }, reason: 'callback_used' },
+    {
+      cookie,
+      fetch: async () => {
+        throw Error('network failed');
+      },
+      reason: 'steam_unavailable',
+    },
+    { cookie, fetch: async () => new Response('is_valid:false\n'), reason: 'steam_rejected' },
+  ];
+  try {
+    for (const scenario of cases) {
+      const params = assertion(scenario.state || state);
+      if (scenario.malformed) params.delete('openid.identity');
+      globalThis.fetch = scenario.fetch || (async () => new Response('is_valid:true\n'));
+      const response = await handleSteamAuth(
+        new Request(origin + '/auth/steam/return?' + params, {
+          headers: { cookie: scenario.cookie },
+        }),
+        scenario.env || env,
+      );
+      const redirect = new URL(response.headers.get('location'), origin);
+      assert.equal(redirect.searchParams.get('reason'), scenario.reason);
+      assert.match(redirect.searchParams.get('ref'), /^[0-9a-f-]{36}$/);
+      assert.equal(response.headers.getSetCookie().length, 1);
+      assert.match(response.headers.getSetCookie()[0], /Max-Age=0/);
+      assert.deepEqual(logs.at(-1), {
+        event: 'steam_login_failed',
+        reason: scenario.reason,
+        reference: redirect.searchParams.get('ref'),
+      });
+    }
+    assert.ok(!JSON.stringify(logs).includes(steamid));
+    assert.ok(!JSON.stringify(logs).includes(cookie));
+  } finally {
+    globalThis.fetch = oldFetch;
+    console.warn = oldWarn;
+  }
+});
