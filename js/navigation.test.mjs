@@ -4,6 +4,7 @@ import { pageFor, slideDirection } from './navigation.js';
 
 test('page routes accept existing HTML links but leave authentication and API requests alone', () => {
   assert.equal(pageFor('/games').name, 'games');
+  assert.equal(pageFor('/minigames').name, 'minigames');
   assert.equal(pageFor('/indie.html').path, '/indie');
   assert.equal(pageFor('/deals/').path, '/deals');
   assert.equal(pageFor('/index.html').name, 'home');

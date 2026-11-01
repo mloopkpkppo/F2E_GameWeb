@@ -1,5 +1,6 @@
 import { catalog } from './catalog.js';
 import { setupNavigation } from './navigation.js';
+import { minigames } from './minigames.js';
 const $ = (s) => document.querySelector(s);
 const esc = (v) =>
   String(v ?? '').replace(
@@ -539,6 +540,58 @@ document.addEventListener('submit', (e) => {
   }
 });
 function bindPageControls() {
+  if ($('#mini-search')) {
+    const filterMinigames = () => {
+      const query = $('#mini-search').value.trim().toLowerCase();
+      const category = $('#mini-category').value;
+      const matches = minigames.filter(
+        (g) =>
+          (category === 'all' ||
+            (category === 'tsuyatt' ? g.creator === 'tsuyatt' : g.category === category)) &&
+          [g.name, g.original, g.creator, g.description].join(' ').toLowerCase().includes(query),
+      );
+      $('#mini-count').textContent = `顯示 ${matches.length} / ${minigames.length} 款`;
+      $('#mini-grid').innerHTML =
+        matches
+          .map(
+            (g) =>
+              /* HTML */ ` <article class="mini-card">
+                <a
+                  href="${esc(g.url)}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  tabindex="-1"
+                  aria-hidden="true"
+                  ><img src="${esc(g.image)}" alt="" width="1200" height="630" loading="lazy"
+                /></a>
+                <div class="mini-card-content">
+                  <div class="mini-card-tags">
+                    <span class="label purple">${esc(g.category)}</span
+                    ><span>${esc(g.language)}</span>
+                  </div>
+                  <p class="mini-creator">${esc(g.creator)} · ${esc(g.original)}</p>
+                  <h2>${esc(g.name)}</h2>
+                  <p>${esc(g.description)}</p>
+                  <p class="mini-controls"><strong>操作方式</strong>${esc(g.controls)}</p>
+                  <a
+                    class="button outline"
+                    href="${esc(g.url)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="在原站開啟 ${esc(g.name)}（新分頁）"
+                    >到原站玩 ↗</a
+                  >
+                  <span class="mini-domain">${esc(new URL(g.url).hostname)} · 原站圖片</span>
+                </div>
+              </article>`,
+          )
+          .join('') ||
+        '<div class="empty"><h2>沒有符合的遊戲</h2><p>試試其他關鍵字或分類。</p></div>';
+    };
+    $('#mini-search').addEventListener('input', filterMinigames);
+    $('#mini-category').addEventListener('change', filterMinigames);
+    filterMinigames();
+  }
   $('#search')?.addEventListener('input', (e) => {
     query = e.target.value.trim().toLowerCase();
     render();

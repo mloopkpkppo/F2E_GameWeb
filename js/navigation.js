@@ -2,9 +2,10 @@ const pages = {
   '/': { name: 'home', order: 0 },
   '/games': { name: 'games', order: 1 },
   '/indie': { name: 'indie', order: 2 },
-  '/deals': { name: 'deals', order: 3 },
-  '/community': { name: 'community', order: 4 },
-  '/account': { name: 'account', order: 5 },
+  '/minigames': { name: 'minigames', order: 3 },
+  '/deals': { name: 'deals', order: 4 },
+  '/community': { name: 'community', order: 5 },
+  '/account': { name: 'account', order: 6 },
 };
 
 export function pageFor(pathname) {

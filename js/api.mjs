@@ -148,6 +148,7 @@ export function createHandler(assets = {}) {
       '/': '/index.html',
       '/games': '/games.html',
       '/indie': '/indie.html',
+      '/minigames': '/minigames.html',
       '/deals': '/deals.html',
       '/community': '/community.html',
       '/account': '/account.html',

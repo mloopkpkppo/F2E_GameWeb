@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101322" />
+    <meta
+      name="description"
+      content="在 PIXEL QUEST 探索 Steam 與獨立遊戲，閱讀介紹、查看台灣區優惠與玩家評價。"
+    />
+    <title>網頁小遊戲｜PIXEL QUEST</title>
+    <link rel="icon" href="/images/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <script type="module" src="/js/app.js"></script>
+  </head>
+  <body data-page="minigames">
+    <a class="skip" href="#main-content">跳至主要內容</a>
+    <header class="header">
+      <div class="nav-wrap">
+        <a class="brand" href="/" aria-label="PIXEL QUEST 首頁"
+          ><span class="brand-icon" aria-hidden="true">✚</span
+          ><span>PIXEL<span class="lime">QUEST</span></span></a
+        >
+        <nav aria-label="主要選單">
+          <a href="/games" class="nav-link">遊戲探索</a
+          ><a href="/indie" class="nav-link">獨立遊戲<span class="nav-dot"></span></a
+          ><a href="/minigames" class="nav-link active" aria-current="page">網頁小遊戲</a
+          ><a href="/deals" class="nav-link">特價優惠</a
+          ><a href="/community" class="nav-link">玩家評價</a>
+        </nav>
+        <div class="nav-actions">
+          <a id="steam-nav" class="steam-nav" href="/account">Steam 帳號 ↗</a
+          ><a id="saved-nav" class="saved-nav" href="/games?filter=saved"
+            ><span aria-hidden="true">♡</span> 收藏清單 <b id="saved-count">0</b></a
+          >
+        </div>
+      </div>
+    </header>
+    <main id="main-content">
+      <section class="container mini-section" aria-labelledby="mini-title">
+        <div class="section-heading">
+          <div>
+            <h1 id="mini-title">網頁小遊戲</h1>
+            <p>跑馬、捲蛋、裝薯條。免安裝，打開原站就能玩。</p>
+          </div>
+          <span class="label purple">瀏覽器即玩</span>
+        </div>
+        <a
+          class="mini-feature"
+          href="https://tsuyatt.com/games/clip-clop/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            src="/images/mini-clip-clop.jpg"
+            alt="Clip-Clop Horse 遊戲畫面"
+            width="1200"
+            height="630"
+          />
+          <div>
+            <span class="label">tsuyatt 精選</span>
+            <h2>先學會站穩，再試著跑。</h2>
+            <p>四個按鈕控制四條腿，挑戰讓馬走完 50 公尺。</p>
+            <span class="text-link">玩四肢不協調馬 ↗</span>
+          </div>
+        </a>
+        <div class="toolbar">
+          <label class="search"
+            ><input
+              id="mini-search"
+              type="search"
+              placeholder="搜尋遊戲或作者…"
+              aria-label="搜尋網頁小遊戲或作者" /></label
+          ><label class="sort"
+            ><span>分類</span
+            ><select id="mini-category">
+              <option value="all">全部小遊戲</option>
+              <option value="tsuyatt">tsuyatt 作品</option>
+              <option value="料理手作">料理手作</option>
+              <option value="物理挑戰">物理挑戰</option>
+            </select></label
+          >
+        </div>
+        <div class="results-line">
+          <span id="mini-count" role="status">已收錄 6 款</span><span>點擊後於新分頁開啟原站</span>
+        </div>
+        <div id="mini-grid" class="mini-grid"></div>
+        <noscript
+          ><p>
+            請啟用 JavaScript 查看完整清單。也可直接前往
+            <a href="https://tsuyatt.com/games/clip-clop/">tsuyatt 四肢不協調馬</a> 或
+            <a href="https://waqk.jp/dashimaki/en/">高湯玉子燒</a>。
+          </p></noscript
+        >
+        <p class="mini-source-note">
+          人工整理原站連結，遊戲與圖片屬於各原作者。本站提供介紹與入口，並非遊戲開發者；介面語言與操作以原站為準。
+        </p>
+      </section>
+    </main>
+    <footer class="container footer">
+      <a class="brand" href="/"
+        ><span class="brand-icon" aria-hidden="true">✚</span
+        ><span>PIXEL<span class="lime">QUEST</span></span></a
+      >
+      <span>獨立遊戲探索專案 · V1.0<br />非 Valve 或 Steam 官方網站</span>
+    </footer>
+    <dialog id="game-dialog" aria-labelledby="dialog-title">
+      <div id="dialog-content"></div>
+      <button id="close-dialog" class="close-dialog" aria-label="關閉遊戲介紹">✕</button>
+    </dialog>
+    <div id="toast" class="toast" role="status" hidden></div>
+  </body>
+</html>

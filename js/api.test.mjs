@@ -9,6 +9,7 @@ test('separate pages support direct navigation, refresh, and HTML files without 
     ['/', 'home'],
     ['/games', 'games'],
     ['/indie', 'indie'],
+    ['/minigames', 'minigames'],
     ['/deals', 'deals'],
     ['/community', 'community'],
     ['/account', 'account'],
