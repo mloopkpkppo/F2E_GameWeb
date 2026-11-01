@@ -253,7 +253,13 @@ function reviewHTML(r, g, preview = false) {
       ><span class="muted">Steam · ${esc(date(r.date))}</span>
     </div>
     <p class="review-excerpt">${esc(r.text)}</p>
-    <div class="review-bottom"><span>評價時遊玩 ${esc(r.hours)} 小時</span>${sourceLink}</div>
+    <div class="review-bottom">
+      <span>評價時遊玩 ${esc(r.hours)} 小時</span>
+      <div class="review-actions">
+        ${r.text?.trim() ? `<a class="text-link" href="${esc('https://translate.google.com/?' + new URLSearchParams({ sl: 'auto', tl: 'zh-TW', text: r.text, op: 'translate' }))}" target="_blank" rel="noopener noreferrer" title="在 Google 翻譯開啟（新分頁）">翻譯成繁體中文 ↗</a>` : ''}
+        ${sourceLink}
+      </div>
+    </div>
   </article>`;
 }
 async function getDetail(id) {
