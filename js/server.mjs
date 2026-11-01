@@ -8,7 +8,7 @@ export async function loadAssets() {
   const assets = {};
   for (const dir of ['css', 'images', 'js'])
     for (const name of await readdir(path.join(root, dir))) {
-      if (dir === 'js' && !['app.js', 'catalog.js'].includes(name)) continue;
+      if (dir === 'js' && !['app.js', 'catalog.js', 'navigation.js'].includes(name)) continue;
       const ext = path.extname(name);
       const type = {
         '.css': 'text/css; charset=utf-8',

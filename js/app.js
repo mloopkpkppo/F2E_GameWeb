@@ -1,4 +1,5 @@
 import { catalog } from './catalog.js';
+import { setupNavigation } from './navigation.js';
 const $ = (s) => document.querySelector(s);
 const esc = (v) =>
   String(v ?? '').replace(
@@ -6,8 +7,8 @@ const esc = (v) =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
   );
 const validId = (id) => catalog.some((g) => g.id === Number(id));
-const page = document.body.dataset.page;
-const filter = new URLSearchParams(location.search).get('filter');
+let page = document.body.dataset.page;
+let viewVersion = 0;
 function readStorage(key, fallback) {
   try {
     return JSON.parse(localStorage.getItem(key)) ?? fallback;
@@ -30,7 +31,7 @@ function readSaved() {
 }
 let saved = readSaved();
 let games = catalog.map((g) => ({ ...g, price: null })),
-  type = ['saved', 'indie', 'solo'].includes(filter) ? filter : 'all',
+  type = 'all',
   query = '',
   genre = 'all',
   sort = 'featured',
@@ -179,12 +180,14 @@ function renderDeals() {
 }
 async function loadCatalog() {
   if (!$('#data-status')) return;
+  const version = viewVersion;
   $('#refresh').disabled = true;
   $('#data-status').textContent = '正在取得 Steam 台灣區價格…';
   try {
     const r = await fetch('/api/catalog');
     if (!r.ok) throw new Error();
     const data = await r.json();
+    if (version !== viewVersion) return;
     if (!Array.isArray(data.games)) throw new Error();
     games = data.games.filter((g) => validId(g.id));
     const available = games.filter((g) => g.status === 'ok').length;
@@ -200,11 +203,12 @@ async function loadCatalog() {
     render();
     renderDeals();
   } catch {
+    if (version !== viewVersion) return;
     $('#data-status').textContent =
       'Steam 目前無法連線。仍可瀏覽精選介紹，價格未取得的作品不列入優惠。';
     renderDeals();
   } finally {
-    $('#refresh').disabled = false;
+    if (version === viewVersion) $('#refresh').disabled = false;
   }
 }
 function setType(value) {
@@ -261,6 +265,7 @@ async function getDetail(id) {
 }
 async function loadCommunity() {
   if (!$('#community-grid')) return;
+  const version = viewVersion;
   const picks = [413150, 2379780, 367520];
   const results = await Promise.allSettled(
     picks.map(async (id) => {
@@ -269,6 +274,7 @@ async function loadCommunity() {
       return d.reviewData?.reviews[0] ? reviewHTML(d.reviewData.reviews[0], g, true) : '';
     }),
   );
+  if (version !== viewVersion) return;
   const html = results
     .filter((r) => r.status === 'fulfilled')
     .map((r) => r.value)
@@ -525,39 +531,41 @@ document.addEventListener('submit', (e) => {
     toast('心得已保存在此瀏覽器。');
   }
 });
-$('#search')?.addEventListener('input', (e) => {
-  query = e.target.value.trim().toLowerCase();
-  render();
-});
-if ($('#genre')) {
-  $('#genre').innerHTML += [
-    ...new Set(catalog.filter((g) => page !== 'indie' || g.indie).map((g) => g.genre)),
-  ]
-    .map((g) => /* HTML */ `<option>${esc(g)}</option>`)
-    .join('');
+function bindPageControls() {
+  $('#search')?.addEventListener('input', (e) => {
+    query = e.target.value.trim().toLowerCase();
+    render();
+  });
+  if ($('#genre')) {
+    $('#genre').innerHTML += [
+      ...new Set(catalog.filter((g) => page !== 'indie' || g.indie).map((g) => g.genre)),
+    ]
+      .map((g) => /* HTML */ `<option>${esc(g)}</option>`)
+      .join('');
+  }
+  $('#genre')?.addEventListener('change', (e) => {
+    genre = e.target.value;
+    render();
+  });
+  $('#sort')?.addEventListener('change', (e) => {
+    sort = e.target.value;
+    render();
+  });
+  $('#reset-filters')?.addEventListener('click', () => {
+    query = '';
+    genre = 'all';
+    sort = 'featured';
+    if ($('#search')) $('#search').value = '';
+    if ($('#genre')) $('#genre').value = 'all';
+    if ($('#sort')) $('#sort').value = 'featured';
+    setType('all');
+  });
+  $('#refresh')?.addEventListener('click', loadCatalog);
+  $('#all-indie')?.addEventListener('click', () => {
+    setType('all');
+    $('#explore').scrollIntoView();
+  });
 }
-$('#genre')?.addEventListener('change', (e) => {
-  genre = e.target.value;
-  render();
-});
-$('#sort')?.addEventListener('change', (e) => {
-  sort = e.target.value;
-  render();
-});
-$('#reset-filters')?.addEventListener('click', () => {
-  query = '';
-  genre = 'all';
-  sort = 'featured';
-  if ($('#search')) $('#search').value = '';
-  if ($('#genre')) $('#genre').value = 'all';
-  if ($('#sort')) $('#sort').value = 'featured';
-  setType('all');
-});
-$('#refresh')?.addEventListener('click', loadCatalog);
-$('#all-indie')?.addEventListener('click', () => {
-  setType('all');
-  $('#explore').scrollIntoView();
-});
 $('#close-dialog').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', (e) => {
   if (e.target === dialog) {
@@ -590,10 +598,12 @@ document.addEventListener('keydown', (e) => {
 async function loadAccount() {
   const box = $('#account-content');
   if (!box) return;
+  const version = viewVersion;
   try {
     const c = await fetch('/auth/steam/config', { cache: 'no-store' });
     if (!c.ok) throw Error();
     const config = await c.json();
+    if (version !== viewVersion) return;
     if (!config.loginReady) {
       box.innerHTML = /* HTML */ `
         <div class="account-card">
@@ -610,6 +620,7 @@ async function loadAccount() {
     const r = await fetch('/api/me', { cache: 'no-store' });
     if (!r.ok) throw Error();
     const d = await r.json();
+    if (version !== viewVersion) return;
     if (!d.authenticated) {
       box.innerHTML = /* HTML */ `<div class="account-card">
         <div class="avatar-placeholder pixel" aria-hidden="true">P1</div>
@@ -699,6 +710,7 @@ async function loadAccount() {
       history.replaceState(null, '', clean.pathname + clean.search + clean.hash);
     }
   } catch {
+    if (version !== viewVersion) return;
     box.innerHTML =
       '<div class="account-card"><div><h3>暫時無法確認登入狀態</h3><p>遊戲探索仍可使用，請稍後再試。</p><button class="button outline" id="retry-account">重新確認</button></div></div>';
   }
@@ -732,6 +744,7 @@ function renderLibrary() {
     : '<p class="muted">Steam 回傳的可見遊戲數為 0，目前沒有可列出的作品。</p>';
 }
 async function loadLibrary() {
+  const version = viewVersion;
   const b = $('#load-library'),
     result = $('#library-result');
   b.disabled = true;
@@ -739,6 +752,7 @@ async function loadLibrary() {
   try {
     const r = await fetch('/api/me/games', { cache: 'no-store' });
     const d = await r.json();
+    if (version !== viewVersion) return;
     if (!r.ok || d.status !== 'ok') {
       result.textContent = d.message || d.error || '暫時無法取得遊戲庫。';
       return;
@@ -754,6 +768,7 @@ async function loadLibrary() {
     renderLibrary();
     render();
   } catch {
+    if (version !== viewVersion) return;
     result.textContent = '連線中斷，請稍後重新讀取。';
   } finally {
     b.disabled = false;
@@ -761,12 +776,14 @@ async function loadLibrary() {
 }
 async function restoreOwnedGames() {
   if (!$('#game-grid')) return;
+  const version = viewVersion;
   ownedGames = null;
   render();
   try {
     const response = await fetch('/api/me', { cache: 'no-store' });
     if (!response.ok) return;
     const data = await response.json();
+    if (version !== viewVersion) return;
     if (!data.authenticated) {
       sessionStorage.removeItem('pq-owned');
       return;
@@ -789,7 +806,33 @@ window.addEventListener('pageshow', (event) => {
   restoreOwnedGames();
   loadAccount();
 });
-// 保留舊書籤可用；一般選單直接連到各自的 HTML 頁面。
+function initializePage() {
+  page = document.body.dataset.page;
+  const selected = new URLSearchParams(location.search).get('filter');
+  type = ['saved', 'indie', 'solo'].includes(selected) ? selected : 'all';
+  query = '';
+  genre = 'all';
+  sort = 'featured';
+  saved = readSaved();
+  bindPageControls();
+  render();
+  loadCatalog();
+  loadCommunity();
+  loadAccount();
+  restoreOwnedGames();
+}
+
+setupNavigation({
+  beforeChange() {
+    viewVersion++;
+    detailToken++;
+    if (dialog.open) dialog.close();
+    activeId = null;
+  },
+  afterChange: initializePage,
+});
+
+// 舊書籤仍會轉到對應路徑；一般選單改在同一份文件內切換內容。
 const legacyPages = {
   '#explore': '/games',
   '#indie': '/indie',
@@ -800,9 +843,5 @@ const legacyPages = {
 if (location.pathname === '/' && legacyPages[location.hash]) {
   location.replace(legacyPages[location.hash] + location.search);
 } else {
-  render();
-  loadCatalog();
-  loadCommunity();
-  loadAccount();
-  restoreOwnedGames();
+  initializePage();
 }

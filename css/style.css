@@ -25,46 +25,18 @@ html {
   scroll-padding-top: 105px;
 }
 
-/* 使用原生跨頁動畫，保留正常的連結、返回與重新整理行為。 */
-@view-transition {
-  navigation: auto;
+.page-slide {
+  display: grid;
+  overflow: hidden;
+  position: relative;
 }
-
-::view-transition-old(root) {
-  animation: quest-page-out 180ms ease-out both;
+.page-slide > main {
+  grid-area: 1 / 1;
+  min-width: 0;
+  width: 100%;
 }
-
-::view-transition-new(root) {
-  animation: quest-page-in 180ms ease-in both;
-}
-
-@keyframes quest-page-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes quest-page-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  @view-transition {
-    navigation: none;
-  }
-
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none !important;
-  }
+main[aria-busy='true'] {
+  cursor: progress;
 }
 
 body {
