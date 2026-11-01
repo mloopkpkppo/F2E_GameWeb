@@ -103,6 +103,7 @@ test('verified login issues a session; the same callback cannot be replayed; fai
   globalThis.fetch = async (url, options) => {
     assert.equal(url, 'https://steamcommunity.com/openid/login');
     assert.equal(options.body.get('openid.mode'), 'check_authentication');
+    assert.equal(options.redirect, 'manual');
     return new Response('ns:http://specs.openid.net/auth/2.0\nis_valid:true\n');
   };
   try {
@@ -220,6 +221,14 @@ test('callback failures identify the step without logging cookies, identity or a
       reason: 'steam_unavailable',
     },
     { cookie, fetch: async () => new Response('is_valid:false\n'), reason: 'steam_rejected' },
+    {
+      cookie,
+      fetch: async (_url, options) => {
+        assert.equal(options.redirect, 'manual');
+        return new Response(null, { status: 302, headers: { location: 'https://example.com' } });
+      },
+      reason: 'steam_unavailable',
+    },
   ];
   try {
     for (const scenario of cases) {

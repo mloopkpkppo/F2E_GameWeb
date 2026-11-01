@@ -181,7 +181,8 @@ export async function handleSteamAuth(request, env) {
         method: 'POST',
         body: params,
         signal: AbortSignal.timeout(10000),
-        redirect: 'error',
+        // Workers 不支援 error；manual 搭配下方狀態檢查，仍拒絕所有轉址。
+        redirect: 'manual',
       });
       if (!verified.ok) throw Error();
       const verification = await verified.text();
