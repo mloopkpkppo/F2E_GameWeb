@@ -144,13 +144,14 @@ export function createHandler(assets = {}) {
       });
     }
     if (path.startsWith('/api/')) return json({ error: '找不到資料' }, 404);
+    if (['/community', '/community/', '/community.html'].includes(path))
+      return new Response(null, { status: 308, headers: { Location: '/games' } });
     const pages = {
       '/': '/index.html',
       '/games': '/games.html',
       '/indie': '/indie.html',
       '/minigames': '/minigames.html',
       '/deals': '/deals.html',
-      '/community': '/community.html',
       '/account': '/account.html',
     };
     if (path.endsWith('/') && pages[path.slice(0, -1)]) {

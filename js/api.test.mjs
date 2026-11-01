@@ -11,7 +11,6 @@ test('separate pages support direct navigation, refresh, and HTML files without 
     ['/indie', 'indie'],
     ['/minigames', 'minigames'],
     ['/deals', 'deals'],
-    ['/community', 'community'],
     ['/account', 'account'],
   ]) {
     const response = await handler(new Request('https://test' + route));
@@ -20,6 +19,7 @@ test('separate pages support direct navigation, refresh, and HTML files without 
     assert.match(html, new RegExp('data-page="' + page + '"'));
     assert.equal((html.match(/<h1\b/g) || []).length, 1, route + ' has one page title');
     assert.doesNotMatch(html, /href="#(?:indie|deals|community|account)"/);
+    assert.doesNotMatch(html, /href="\/community"/);
     if (page !== 'indie') assert.doesNotMatch(html, /id="indie"/);
     if (page !== 'deals') assert.doesNotMatch(html, /id="deals-grid"/);
   }
@@ -28,6 +28,11 @@ test('separate pages support direct navigation, refresh, and HTML files without 
   assert.equal(trailing.status, 308);
   assert.equal(trailing.headers.get('location'), '/games?filter=saved');
   assert.equal((await handler(new Request('https://test/no-such-page'))).status, 404);
+  for (const route of ['/community', '/community/', '/community.html']) {
+    const response = await handler(new Request('https://test' + route));
+    assert.equal(response.status, 308);
+    assert.equal(response.headers.get('location'), '/games');
+  }
 });
 test('missing price is unknown, not free; prices remain integer minor units', () => {
   assert.equal(normalizePrice({}), null);

@@ -247,19 +247,17 @@ function updateDialogSave() {
   }
 }
 const date = (t) => new Date(t * 1000).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
-function reviewHTML(r, g, preview = false) {
-  const sourceLink = preview
-    ? /* HTML */ `<button class="text-link" data-open="${g.id}">${esc(g.name)} ↗</button>`
-    : r.steamid
-      ? /* HTML */ `<a
-          class="text-link"
-          href="https://steamcommunity.com/profiles/${r.steamid}/recommended/${g.id}/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Steam 原文 ↗
-        </a>`
-      : '';
+function reviewHTML(r, g) {
+  const sourceLink = r.steamid
+    ? /* HTML */ `<a
+        class="text-link"
+        href="https://steamcommunity.com/profiles/${r.steamid}/recommended/${g.id}/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Steam 原文 ↗
+      </a>`
+    : '';
   return /* HTML */ `<article class="review-card">
     <div class="review-heading">
       <span class="${r.positive ? 'review-positive' : 'review-negative'}"
@@ -283,26 +281,6 @@ async function getDetail(id) {
   const d = await r.json();
   details.set(id, d);
   return d;
-}
-async function loadCommunity() {
-  if (!$('#community-grid')) return;
-  const version = viewVersion;
-  const picks = [413150, 2379780, 367520];
-  const results = await Promise.allSettled(
-    picks.map(async (id) => {
-      const d = await getDetail(id);
-      const g = games.find((g) => g.id === id);
-      return d.reviewData?.reviews[0] ? reviewHTML(d.reviewData.reviews[0], g, true) : '';
-    }),
-  );
-  if (version !== viewVersion) return;
-  const html = results
-    .filter((r) => r.status === 'fulfilled')
-    .map((r) => r.value)
-    .join('');
-  $('#community-grid').innerHTML =
-    html ||
-    '<div class="empty"><h3>評論暫時無法取得</h3><p>可以點開遊戲查看介紹，或直接前往 Steam 閱讀玩家評論。</p><button class="button outline" id="retry-community">重新取得評論</button></div>';
 }
 const dialog = $('#game-dialog');
 function openGame(id) {
@@ -516,7 +494,6 @@ document.addEventListener('click', (e) => {
     )
       renderComments();
   }
-  if (e.target.closest('#retry-community')) loadCommunity();
   if (e.target.closest('#load-library')) loadLibrary();
   if (e.target.closest('#more-library')) {
     libraryLimit += 25;
@@ -1013,7 +990,6 @@ function initializePage() {
   bindPageControls();
   render();
   loadCatalog();
-  loadCommunity();
   loadAccount();
   restoreOwnedGames();
 }
@@ -1033,7 +1009,7 @@ const legacyPages = {
   '#explore': '/games',
   '#indie': '/indie',
   '#deals': '/deals',
-  '#community': '/community',
+  '#community': '/games',
   '#account': '/account',
 };
 if (location.pathname === '/' && legacyPages[location.hash]) {

@@ -4,8 +4,7 @@ const pages = {
   '/indie': { name: 'indie', order: 2 },
   '/minigames': { name: 'minigames', order: 3 },
   '/deals': { name: 'deals', order: 4 },
-  '/community': { name: 'community', order: 5 },
-  '/account': { name: 'account', order: 6 },
+  '/account': { name: 'account', order: 5 },
 };
 
 export function pageFor(pathname) {

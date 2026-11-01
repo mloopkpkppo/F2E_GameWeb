@@ -11,6 +11,7 @@ test('page routes accept existing HTML links but leave authentication and API re
   assert.equal(pageFor('/auth/steam'), null);
   assert.equal(pageFor('/auth/steam/logout'), null);
   assert.equal(pageFor('/api/me'), null);
+  assert.equal(pageFor('/community'), null);
   assert.equal(pageFor('/games/index.html'), null);
   assert.equal(pageFor('/not-a-page'), null);
 });
