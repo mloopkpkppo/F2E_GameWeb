@@ -40,6 +40,7 @@ let games = catalog.map((g) => ({ ...g, price: null })),
   detailToken = 0;
 const details = new Map();
 let ownedGames = null,
+  libraryValue = null,
   libraryLimit = 25,
   currentUser = null;
 let toastTimer;
@@ -738,31 +739,81 @@ async function loadAccount() {
 }
 function renderLibrary() {
   if (!ownedGames) return;
-  $('#library-result').innerHTML = ownedGames.length
-    ? /* HTML */ `<p class="library-summary">
-          已取得 ${ownedGames.length} 款作品 · 依累積遊玩時間排序
-        </p>
-        <div class="library-list">
-          ${ownedGames
-            .slice(0, libraryLimit)
-            .map(
-              (g) =>
-                /* HTML */ `<a
-                  class="library-row"
-                  href="https://store.steampowered.com/app/${g.id}/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  ><span>${esc(g.name)}</span
-                  ><strong
-                    >${esc((g.minutes / 60).toLocaleString('zh-TW', { maximumFractionDigits: 1 }))}
-                    小時 ↗</strong
-                  ></a
-                >`,
-            )
-            .join('')}
-        </div>
-        ${ownedGames.length > libraryLimit ? '<button class="text-link" id="more-library">顯示更多作品 ↓</button>' : ''}`
-    : '<p class="muted">Steam 回傳的可見遊戲數為 0，目前沒有可列出的作品。</p>';
+  const totalMinutes = ownedGames.reduce((sum, g) => sum + (g.minutes || 0), 0);
+  const number = (value) => value.toLocaleString('zh-TW');
+  const valueText = libraryValue?.priced
+    ? 'NT$ ' + (libraryValue.total / 100).toLocaleString('zh-TW', { maximumFractionDigits: 2 })
+    : libraryValue?.done && !ownedGames.length
+      ? 'NT$ 0'
+      : '尚無估值';
+  $('#library-result').innerHTML = /* HTML */ ` <div class="library-stats">
+      <div>
+        <span>總遊玩時數</span
+        ><strong
+          >${number(Math.floor(totalMinutes / 60))} 小時 ${number(totalMinutes % 60)} 分鐘</strong
+        >
+      </div>
+      <div>
+        <span>台灣商店現價估值${libraryValue?.priced < ownedGames.length ? '（部分）' : ''}</span
+        ><strong>${valueText}</strong>
+      </div>
+    </div>
+    <p class="library-summary">
+      ${libraryValue?.failed ? '部分報價讀取失敗，可重新讀取遊戲庫重試。' : libraryValue?.done ? `已完成報價查詢；${number(libraryValue.priced)} 款有報價，${number(libraryValue.unpriced)} 款無報價。` : `正在查詢報價：${number(libraryValue?.checked || 0)} / ${number(ownedGames.length)} 款。`}
+      依 Steam
+      台灣商店目前售價估算，含當下折扣，非實際購買花費。免費、下架或未提供報價的作品不計入金額。時數為
+      Steam 回傳的可見遊戲時數加總。
+    </p>
+    ${
+      ownedGames.length
+        ? /* HTML */ `<p class="library-summary">
+              已取得 ${ownedGames.length} 款作品 · 依累積遊玩時間排序
+            </p>
+            <div class="library-list">
+              ${ownedGames
+                .slice(0, libraryLimit)
+                .map(
+                  (g) =>
+                    /* HTML */ `<a
+                      class="library-row"
+                      href="https://store.steampowered.com/app/${g.id}/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      ><span>${esc(g.name)}</span
+                      ><strong
+                        >${esc((g.minutes / 60).toLocaleString('zh-TW', { maximumFractionDigits: 1 }))}
+                        小時 ↗</strong
+                      ></a
+                    >`,
+                )
+                .join('')}
+            </div>
+            ${ownedGames.length > libraryLimit ? '<button class="text-link" id="more-library">顯示更多作品 ↓</button>' : ''}`
+        : '<p class="muted">Steam 回傳的可見遊戲數為 0，目前沒有可列出的作品。</p>'
+    }`;
+}
+async function loadLibraryValue(version) {
+  libraryValue = { total: 0, priced: 0, unpriced: 0, checked: 0, done: !ownedGames.length };
+  renderLibrary();
+  let offset = 0;
+  try {
+    while (ownedGames.length) {
+      const response = await fetch('/api/me/games/value?offset=' + offset, { cache: 'no-store' });
+      const data = await response.json();
+      if (version !== viewVersion) return;
+      if (!response.ok || data.status !== 'ok' || data.count !== ownedGames.length) throw Error();
+      for (const field of ['total', 'priced', 'unpriced', 'checked'])
+        libraryValue[field] += data[field];
+      libraryValue.done = data.nextOffset === null;
+      renderLibrary();
+      if (libraryValue.done) return;
+      offset = data.nextOffset;
+    }
+  } catch {
+    if (version !== viewVersion) return;
+    libraryValue.failed = true;
+    renderLibrary();
+  }
 }
 async function loadLibrary() {
   const version = viewVersion;
@@ -786,8 +837,8 @@ async function loadLibrary() {
       );
     } catch {}
     libraryLimit = 25;
-    renderLibrary();
     render();
+    await loadLibraryValue(version);
   } catch {
     if (version !== viewVersion) return;
     result.textContent = '連線中斷，請稍後重新讀取。';

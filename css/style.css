@@ -1560,6 +1560,24 @@ body.modal-open {
   background: var(--line);
   border: 1px solid var(--line);
 }
+.library-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.library-stats > div {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+.library-stats strong {
+  color: var(--lime);
+  font-size: var(--text-body);
+  overflow-wrap: anywhere;
+}
 .library-row {
   display: flex;
   gap: 20px;

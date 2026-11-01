@@ -119,6 +119,24 @@ export function validateAssertion(params, origin, state, now = Date.now()) {
     throw Error('expired');
   return match[1];
 }
+export function summarizeLibraryPrices(ids, prices) {
+  let total = 0;
+  let priced = 0;
+  for (const id of ids) {
+    const item = prices[id];
+    const price = item?.data?.price_overview;
+    if (
+      item?.success &&
+      price?.currency === 'TWD' &&
+      Number.isSafeInteger(price.final) &&
+      price.final >= 0
+    ) {
+      total += price.final;
+      priced++;
+    }
+  }
+  return { total, priced, unpriced: ids.length - priced, currency: 'TWD' };
+}
 export async function handleSteamAuth(request, env) {
   const url = new URL(request.url),
     path = url.pathname;
@@ -249,7 +267,7 @@ export async function handleSteamAuth(request, env) {
       return authJSON({ authenticated: true, user: basic, profileStatus: 'unavailable' });
     }
   }
-  if (path === '/api/me/games' && request.method === 'GET') {
+  if ((path === '/api/me/games' || path === '/api/me/games/value') && request.method === 'GET') {
     if (!user) return authJSON({ error: '請先使用 Steam 登入' }, 401);
     if (!env.STEAM_API_KEY)
       return authJSON(
@@ -275,18 +293,45 @@ export async function handleSteamAuth(request, env) {
           games: null,
           message: 'Steam 沒有提供遊戲庫資料，可能是遊戲詳細資料未公開。登入不會繞過隱私設定。',
         });
-      return authJSON({
-        status: 'ok',
-        count: d.game_count,
-        games: (d.games || [])
-          .filter((g) => Number.isInteger(g.appid) && g.appid > 0)
-          .map((g) => ({
-            id: g.appid,
-            name: String(g.name || 'Steam 遊戲').slice(0, 150),
-            minutes: Number.isFinite(g.playtime_forever) ? g.playtime_forever : 0,
-          }))
-          .sort((a, b) => b.minutes - a.minutes),
-      });
+      const games = (d.games || [])
+        .filter((g) => Number.isInteger(g.appid) && g.appid > 0)
+        .map((g) => ({
+          id: g.appid,
+          name: String(g.name || 'Steam 遊戲').slice(0, 150),
+          minutes:
+            Number.isFinite(g.playtime_forever) && g.playtime_forever >= 0 ? g.playtime_forever : 0,
+        }))
+        .sort((a, b) => b.minutes - a.minutes || a.id - b.id);
+      if (path === '/api/me/games/value') {
+        const offsetText = url.searchParams.get('offset') || '0';
+        if (!/^\d{1,7}$/.test(offsetText)) return authJSON({ error: '無效的讀取範圍' }, 400);
+        const offset = Number(offsetText);
+        const ids = games.slice(offset, offset + 50).map((g) => g.id);
+        let prices = {};
+        if (ids.length) {
+          const response = await fetch(
+            'https://store.steampowered.com/api/appdetails?' +
+              new URLSearchParams({
+                appids: ids.join(','),
+                filters: 'price_overview',
+                cc: 'tw',
+                l: 'tchinese',
+              }),
+            { signal: AbortSignal.timeout(12000), redirect: 'manual' },
+          );
+          if (!response.ok) throw Error();
+          prices = await response.json();
+          if (!prices || typeof prices !== 'object') throw Error();
+        }
+        return authJSON({
+          status: 'ok',
+          ...summarizeLibraryPrices(ids, prices),
+          checked: ids.length,
+          count: games.length,
+          nextOffset: offset + ids.length < games.length ? offset + ids.length : null,
+        });
+      }
+      return authJSON({ status: 'ok', count: d.game_count, games });
     } catch {
       return authJSON(
         { status: 'unavailable', error: 'Steam 遊戲庫暫時無法取得，請稍後重試。' },

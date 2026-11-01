@@ -1,9 +1,100 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handleSteamAuth, signToken, verifyToken, validateAssertion } from './steam-auth.mjs';
+import {
+  handleSteamAuth,
+  signToken,
+  verifyToken,
+  validateAssertion,
+  summarizeLibraryPrices,
+} from './steam-auth.mjs';
 const origin = 'https://pixel.test',
   secret = 'test-only-secret-that-is-long-enough-to-sign',
   steamid = '76561198000000000';
+test('library valuation sums only valid TWD minor-unit prices and reports missing quotes', () => {
+  const quote = (currency, final) => ({
+    success: true,
+    data: { price_overview: { currency, final } },
+  });
+  assert.deepEqual(
+    summarizeLibraryPrices([1, 2, 3, 4, 5, 6, 7], {
+      1: quote('TWD', 12345),
+      2: quote('TWD', 0),
+      3: quote('USD', 500),
+      4: { success: true, data: [] },
+      5: quote('TWD', -1),
+      6: quote('TWD', 1.5),
+    }),
+    { total: 12345, priced: 2, unpriced: 5, currency: 'TWD' },
+  );
+});
+
+test('valuation requires login and prices only a bounded batch of the signed-in library', async () => {
+  const env = { ...environment(), STEAM_API_KEY: 'test-key-not-real' };
+  assert.equal(
+    (await handleSteamAuth(new Request(origin + '/api/me/games/value'), env)).status,
+    401,
+  );
+  const token = await signToken(
+    { kind: 'session', origin, steamid, exp: Date.now() + 10000 },
+    secret,
+  );
+  const cookie = '__Host-pq_steam_session=' + token;
+  const old = globalThis.fetch;
+  const requested = [];
+  globalThis.fetch = async (url, options) => {
+    const u = new URL(url);
+    if (u.hostname === 'api.steampowered.com') {
+      assert.equal(u.searchParams.get('steamid'), steamid);
+      return Response.json({
+        response: {
+          game_count: 51,
+          games: Array.from({ length: 51 }, (_, i) => ({
+            appid: i + 1,
+            name: 'Game',
+            playtime_forever: i === 0 ? -10 : 60,
+          })),
+        },
+      });
+    }
+    assert.equal(u.hostname, 'store.steampowered.com');
+    assert.equal(u.searchParams.get('cc'), 'tw');
+    assert.equal(u.searchParams.get('filters'), 'price_overview');
+    assert.equal(options.redirect, 'manual');
+    const ids = u.searchParams.get('appids').split(',').map(Number);
+    assert.ok(ids.length <= 50);
+    requested.push(...ids);
+    return Response.json(
+      Object.fromEntries(
+        ids.map((id) => [
+          id,
+          { success: true, data: { price_overview: { currency: 'TWD', final: 10000 } } },
+        ]),
+      ),
+    );
+  };
+  try {
+    const req = (offset) =>
+      new Request(
+        origin + '/api/me/games/value?offset=' + offset + '&steamid=76561198000000001&appids=999',
+        { headers: { cookie } },
+      );
+    const first = await handleSteamAuth(req(0), env);
+    assert.match(first.headers.get('cache-control'), /no-store/);
+    const batch1 = await first.json();
+    assert.equal(batch1.total, 500000);
+    assert.equal(batch1.nextOffset, 50);
+    const batch2 = await (await handleSteamAuth(req(50), env)).json();
+    assert.equal(batch2.total, 10000);
+    assert.equal(batch2.nextOffset, null);
+    assert.equal(new Set(requested).size, 51);
+    assert.ok(!requested.includes(999));
+    assert.equal((await handleSteamAuth(req('-1'), env)).status, 400);
+    globalThis.fetch = async () => Response.json({ response: {} });
+    assert.equal((await (await handleSteamAuth(req(0), env)).json()).games, null);
+  } finally {
+    globalThis.fetch = old;
+  }
+});
 function environment() {
   const used = new Set();
   return {
