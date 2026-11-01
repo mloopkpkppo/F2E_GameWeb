@@ -737,6 +737,14 @@ async function loadAccount() {
       '<div class="account-card"><div><h3>暫時無法確認登入狀態</h3><p>遊戲探索仍可使用，請稍後再試。</p><button class="button outline" id="retry-account">重新確認</button></div></div>';
   }
 }
+document.addEventListener(
+  'error',
+  (event) => {
+    if (event.target instanceof HTMLImageElement && event.target.matches('.library-cover img'))
+      event.target.remove();
+  },
+  true,
+);
 function renderLibrary() {
   if (!ownedGames) return;
   const totalMinutes = ownedGames.reduce((sum, g) => sum + (g.minutes || 0), 0);
@@ -747,48 +755,91 @@ function renderLibrary() {
       ? 'NT$ 0'
       : '尚無估值';
   $('#library-result').innerHTML = /* HTML */ ` <div class="library-stats">
-      <div>
-        <span>總遊玩時數</span
-        ><strong
-          >${number(Math.floor(totalMinutes / 60))} 小時 ${number(totalMinutes % 60)} 分鐘</strong
-        >
+      <div class="library-stat-count">
+        <span>已擁有遊戲</span><strong>${number(ownedGames.length)}<small> 款</small></strong>
+        <span>Steam 可見遊戲庫</span>
       </div>
-      <div>
+      <div class="library-stat-time">
+        <span>總遊玩時數</span
+        ><strong>${number(Math.floor(totalMinutes / 60))}<small> 小時</small></strong>
+        <span>另 ${number(totalMinutes % 60)} 分鐘</span>
+      </div>
+      <div class="library-stat-value">
         <span>台灣商店現價估值${libraryValue?.priced < ownedGames.length ? '（部分）' : ''}</span
         ><strong>${valueText}</strong>
+        <span
+          >${libraryValue?.failed ? '部分報價未完成' : libraryValue?.done ? `${number(libraryValue.priced)} 款已取得報價` : '報價查詢中'}</span
+        >
       </div>
     </div>
-    <p class="library-summary">
+    <div class="library-valuation-status" role="status">
       ${libraryValue?.failed ? '部分報價讀取失敗，可重新讀取遊戲庫重試。' : libraryValue?.done ? `已完成報價查詢；${number(libraryValue.priced)} 款有報價，${number(libraryValue.unpriced)} 款無報價。` : `正在查詢報價：${number(libraryValue?.checked || 0)} / ${number(ownedGames.length)} 款。`}
-      依 Steam
-      台灣商店目前售價估算，含當下折扣，非實際購買花費。免費、下架或未提供報價的作品不計入金額。時數為
-      Steam 回傳的可見遊戲時數加總。
-    </p>
+      ${!libraryValue?.done && !libraryValue?.failed ? `<progress value="${libraryValue?.checked || 0}" max="${Math.max(ownedGames.length, 1)}" aria-label="遊戲報價查詢進度"></progress>` : ''}
+    </div>
+    <details class="library-calculation">
+      <summary>估值與時數如何計算？</summary>
+      <p>
+        依 Steam
+        台灣商店目前售價估算，含當下折扣，非實際購買花費。免費、下架或未提供報價的作品不計入金額。時數為
+        Steam 回傳的可見遊戲時數加總。
+      </p>
+    </details>
     ${
       ownedGames.length
-        ? /* HTML */ `<p class="library-summary">
-              已取得 ${ownedGames.length} 款作品 · 依累積遊玩時間排序
-            </p>
-            <div class="library-list">
+        ? /* HTML */ `<div class="library-collection-heading">
+              <h4>我的遊戲收藏</h4>
+              <span
+                >依累積遊玩時間排序 · 顯示 ${Math.min(libraryLimit, ownedGames.length)} /
+                ${ownedGames.length} 款</span
+              >
+            </div>
+            <div class="library-grid">
               ${ownedGames
                 .slice(0, libraryLimit)
                 .map(
-                  (g) =>
+                  (g, index) =>
                     /* HTML */ `<a
-                      class="library-row"
+                      class="library-game"
                       href="https://store.steampowered.com/app/${g.id}/"
                       target="_blank"
                       rel="noopener noreferrer"
-                      ><span>${esc(g.name)}</span
-                      ><strong
-                        >${esc((g.minutes / 60).toLocaleString('zh-TW', { maximumFractionDigits: 1 }))}
-                        小時 ↗</strong
-                      ></a
+                      ><div class="library-cover">
+                        <span class="library-cover-placeholder" aria-hidden="true"
+                          >${esc(g.name)}</span
+                        >
+                        <img
+                          src="https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${g.id}/header.jpg"
+                          alt=""
+                          width="460"
+                          height="215"
+                          loading="lazy"
+                        />
+                        ${index < 3 && g.minutes > 0 ? `<span class="library-rank">遊玩 TOP ${index + 1}</span>` : ''}
+                      </div>
+                      <div class="library-game-info">
+                        <h5>${esc(g.name)}</h5>
+                        <div class="library-game-time">
+                          <span>${g.minutes ? '累積遊玩' : '尚未遊玩'}</span
+                          ><strong
+                            >${esc((g.minutes / 60).toLocaleString('zh-TW', { maximumFractionDigits: 1 }))}
+                            小時</strong
+                          >
+                        </div>
+                        <meter
+                          min="0"
+                          max="${Math.max(ownedGames[0]?.minutes || 0, 1)}"
+                          value="${g.minutes}"
+                          aria-label="${esc(g.name)} 相對最長遊玩時數"
+                        ></meter>
+                        <span class="library-store-link"
+                          >前往 Steam 商店 <span aria-hidden="true">↗</span></span
+                        >
+                      </div></a
                     >`,
                 )
                 .join('')}
             </div>
-            ${ownedGames.length > libraryLimit ? '<button class="text-link" id="more-library">顯示更多作品 ↓</button>' : ''}`
+            ${ownedGames.length > libraryLimit ? '<button class="button outline library-more" id="more-library">顯示更多遊戲 ↓</button>' : ''}`
         : '<p class="muted">Steam 回傳的可見遊戲數為 0，目前沒有可列出的作品。</p>'
     }`;
 }
