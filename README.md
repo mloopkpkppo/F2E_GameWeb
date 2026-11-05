@@ -1,4 +1,4 @@
-# PIXEL QUEST｜遊戲探索基地
+# PIXELIZED｜遊戲探索基地
 
 ## 程式排版
 

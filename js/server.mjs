@@ -73,6 +73,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     }
   });
   server.listen(Number(process.env.PORT) || 3000, '127.0.0.1', () =>
-    console.log('PIXEL QUEST: http://localhost:' + (process.env.PORT || 3000)),
+    console.log('PIXELIZED: http://localhost:' + (process.env.PORT || 3000)),
   );
 }
