@@ -218,18 +218,8 @@
   font-size: var(--text-small);
   overflow-wrap: anywhere;
 }
-.mini-card .mini-controls {
-  font-size: var(--text-small);
-  color: var(--muted);
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
+.mini-card-content > .button {
   margin-top: auto;
-}
-.mini-controls strong {
-  display: block;
-  color: var(--text);
-  font-weight: 500;
-  margin-bottom: 5px;
 }
 .mini-domain {
   font-size: var(--text-small);

@@ -562,7 +562,6 @@ function bindPageControls() {
                   <p class="mini-creator">${esc(g.creator)} · ${esc(g.original)}</p>
                   <h2>${esc(g.name)}</h2>
                   <p>${esc(g.description)}</p>
-                  <p class="mini-controls"><strong>操作方式</strong>${esc(g.controls)}</p>
                   <a
                     class="button outline"
                     href="${esc(g.url)}"
