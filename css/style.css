@@ -1314,64 +1314,6 @@ body.modal-open {
   -webkit-line-clamp: 6;
   margin: 0 0 8px;
 }
-.form-note {
-  font-size: var(--text-small);
-  color: var(--yellow);
-}
-.comment-form {
-  display: grid;
-  gap: 15px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  padding: 20px;
-  margin-top: 18px;
-}
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-}
-.comment-form label {
-  font-size: var(--text-small);
-  color: #c4cce0;
-  display: grid;
-  gap: 7px;
-}
-.comment-form input,
-.comment-form textarea {
-  width: 100%;
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--line);
-  padding: 11px;
-  resize: vertical;
-}
-.comment-form select {
-  width: 100%;
-}
-.comment-form .button {
-  justify-self: start;
-}
-.local-comment {
-  border-left: 3px solid var(--purple);
-  padding: 14px 17px;
-  background: var(--surface);
-  margin: 12px 0;
-}
-.local-comment p {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: var(--text-body);
-}
-.local-comment small {
-  color: var(--muted);
-  font-size: var(--text-small);
-}
-.local-comment .subtle-button {
-  float: right;
-  color: #ffaaaa;
-  font-size: var(--text-small);
-}
 @media (min-width: 1500px) {
   .hero {
     padding-block: 75px;
@@ -1732,16 +1674,10 @@ body.modal-open {
     border-bottom: 1px solid var(--line);
     padding: 12px 15px;
   }
-  .form-row {
-    grid-template-columns: 1fr;
-  }
   .dialog-actions .button {
     font-size: var(--text-small);
     padding: 10px 14px;
     gap: 8px;
-  }
-  .comment-form {
-    padding: 15px;
   }
   .screenshots img {
     width: 90%;
@@ -2243,8 +2179,7 @@ textarea {
 .review-excerpt,
 .spotlight p:not(.tiny),
 .account-card p,
-.privacy-details p,
-.local-comment p {
+.privacy-details p {
   line-height: 1.8;
 }
 .hero {

@@ -513,41 +513,9 @@ function openGame(id) {
       <h3>Steam 玩家評價</h3>
       <p class="fine-print">所有語言 · Steam 購買評論 · 原文顯示；本站沒有修改評論內容。</p>
       <div id="steam-reviews" class="review-list"><p class="muted">載入中…</p></div>
-      <h3>你的遊戲筆記 / 試用留言</h3>
-      <p class="form-note">只儲存在此瀏覽器。其他訪客看不到，也不會同步到 Steam。</p>
-      <div id="local-comments"></div>
-      <form id="comment-form" class="comment-form">
-        <div class="form-row">
-          <label
-            >玩家暱稱<input
-              name="nickname"
-              required
-              maxlength="24"
-              autocomplete="nickname"
-              placeholder="怎麼稱呼你？" /></label
-          ><label
-            >你的評價<select name="rating">
-              <option value="recommend">推薦這款遊戲</option>
-              <option value="neutral">有優點，也有缺點</option>
-              <option value="negative">不太適合我</option>
-            </select></label
-          >
-        </div>
-        <label
-          >遊玩心得<textarea
-            name="comment"
-            rows="4"
-            required
-            minlength="3"
-            maxlength="1000"
-            placeholder="分享玩法、喜歡的地方，或給新玩家的小建議…"
-          ></textarea></label
-        ><button type="submit" class="button primary">儲存試用留言 ＋</button>
-      </form>
     </div>`;
   dialog.scrollTop = 0;
   updateDialogSave();
-  renderComments();
   getDetail(id)
     .then((d) => {
       if (activeId !== id || token !== detailToken) return;
@@ -605,48 +573,6 @@ function openGame(id) {
       $('#steam-reviews').textContent = '評論暫時無法取得。';
     });
 }
-function comments() {
-  const c = readStorage('pq-comments', []);
-  return Array.isArray(c)
-    ? c
-        .filter(
-          (x) =>
-            x &&
-            typeof x.id === 'string' &&
-            validId(x.game) &&
-            typeof x.text === 'string' &&
-            typeof x.name === 'string' &&
-            Number.isFinite(x.date),
-        )
-        .slice(0, 100)
-    : [];
-}
-function renderComments() {
-  if (!$('#local-comments')) return;
-  const list = comments().filter((c) => c.game === activeId);
-  $('#local-comments').innerHTML = list.length
-    ? list
-        .map(
-          (c) =>
-            /* HTML */ `<article class="local-comment">
-              <button
-                class="subtle-button"
-                data-delete="${esc(c.id)}"
-                aria-label="刪除這則試用留言"
-              >
-                刪除</button
-              ><b>${esc(c.name)}</b
-              ><small>
-                ·
-                ${{ recommend: '推薦', neutral: '優缺點並存', negative: '不太適合我' }[c.rating] || '心得'}
-                · ${esc(new Date(c.date).toLocaleDateString('zh-TW'))}</small
-              >
-              <p>${esc(c.text)}</p>
-            </article>`,
-        )
-        .join('')
-    : '<p class="muted">還沒有筆記，來記下你的第一個心得吧。</p>';
-}
 document.addEventListener('click', (e) => {
   if (e.target.closest('[data-retry-favorites]')) {
     loadFavorites();
@@ -683,16 +609,6 @@ document.addEventListener('click', (e) => {
     return;
   }
   if (e.target.closest('#dialog-save')) toggleSave(activeId);
-  const del = e.target.closest('[data-delete]');
-  if (del) {
-    if (
-      writeStorage(
-        'pq-comments',
-        comments().filter((c) => c.id !== del.dataset.delete),
-      )
-    )
-      renderComments();
-  }
   if (e.target.closest('#load-library')) loadLibrary();
   if (e.target.closest('#more-library')) {
     libraryLimit += 25;
@@ -706,26 +622,6 @@ document.addEventListener('submit', (e) => {
       sessionStorage.removeItem('pq-owned');
     } catch {}
     return;
-  }
-  if (e.target.id !== 'comment-form') return;
-  e.preventDefault();
-  const form = e.target,
-    fd = new FormData(form),
-    name = String(fd.get('nickname')).trim(),
-    text = String(fd.get('comment')).trim(),
-    rating = String(fd.get('rating'));
-  if (!name || name.length > 24 || text.length < 3 || text.length > 1000) {
-    toast('請填寫暱稱，以及 3～1000 字的心得。');
-    return;
-  }
-  const next = [
-    { id: crypto.randomUUID(), game: activeId, name, text, rating, date: Date.now() },
-    ...comments(),
-  ].slice(0, 100);
-  if (writeStorage('pq-comments', next)) {
-    form.reset();
-    renderComments();
-    toast('心得已保存在此瀏覽器。');
   }
 });
 function bindPageControls() {
@@ -867,7 +763,7 @@ async function loadAccount() {
           <div>
             <h3>Steam 登入準備中</h3>
             <p>這個版本已預留登入與個人資料介面，網站管理者需要先完成後端登入設定。</p>
-            <p class="fine-print">你仍可直接使用遊戲探索、收藏及試用留言。</p>
+            <p class="fine-print">你仍可直接使用遊戲探索與收藏。</p>
           </div>
         </div>
       `;
