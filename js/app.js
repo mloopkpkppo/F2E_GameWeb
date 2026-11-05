@@ -140,11 +140,16 @@ async function changeCloudFavorites(path, body, message) {
   try {
     const response = await fetch(path, {
       method: path.endsWith('/import') ? 'POST' : 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Favorites-Account': account },
       body: JSON.stringify(body),
       cache: 'no-store',
     });
     if (!response.ok) {
+      if (response.status === 409) {
+        toast('登入帳號已變更，已重新讀取目前帳號的收藏。');
+        await loadFavorites();
+        return;
+      }
       if (response.status === 401) {
         toast('登入已過期，請重新登入 Steam。');
         await loadFavorites();

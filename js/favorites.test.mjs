@@ -44,6 +44,7 @@ test('verified accounts keep independent persistent collections across new sessi
           method,
           headers: {
             Cookie: '__Host-pq_steam_session=' + token,
+            'X-Favorites-Account': options.account || steamid || '',
             Origin: options.origin || origin,
             'Content-Type': options.contentType || 'application/json',
           },
@@ -53,6 +54,10 @@ test('verified accounts keep independent persistent collections across new sessi
       );
     }
     assert.equal((await request(null)).status, 401);
+    assert.equal(
+      (await request(bob, 'PUT', { appid: 413150, saved: true }, { account: alice })).status,
+      409,
+    );
     assert.equal(
       (
         await request(

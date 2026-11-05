@@ -82,6 +82,10 @@ export async function handleFavorites(request, env, user) {
   if (!reading && request.headers.get('Origin') !== env.SITE_ORIGIN) {
     return favoriteJSON({ error: '無效的請求來源。' }, 403);
   }
+  // 共用瀏覽器在另一個分頁切換帳號後，舊畫面不能寫入新帳號。
+  if (!reading && request.headers.get('X-Favorites-Account') !== user.steamid) {
+    return favoriteJSON({ error: '登入帳號已變更，請重新讀取收藏。' }, 409);
+  }
   if (!env.favoritesStore) return favoriteJSON({ error: '帳號收藏暫時無法使用。' }, 503);
   let body;
   if (!reading) {
