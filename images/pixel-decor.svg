@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" fill="none" shape-rendering="crispEdges">
+  <defs>
+    <path id="spark" d="M8 0h4v8h8v4h-8v8H8v-8H0V8h8z"/>
+    <path id="heart" d="M4 0h8v4h4V0h8v4h4v12h-4v4h-4v4h-4v4h-4v-4H8v-4H4v-4H0V4h4z"/>
+    <path id="invader" d="M8 0h4v4H8zm24 0h4v4h-4zM12 4h20v4h8v4h4v16h-4v-8h-4v8h-8v-4H16v4H8v-8H4v8H0V12h4V8h8zm0 8v4h4v-4zm16 0v4h4v-4zM8 28h8v4H8zm20 0h8v4h-8z" fill-rule="evenodd"/>
+    <path id="gem" d="M8 0h16v4h4v4h4v16h-4v4h-4v4H8v-4H4v-4H0V8h4V4h4zm4 4v4H8v16h4v4h8v-4h4V8h-4V4z" fill-rule="evenodd"/>
+  </defs>
+  <g fill="#c0f579" opacity=".18">
+    <use href="#spark" x="72" y="82"/>
+    <use href="#spark" x="834" y="374"/>
+    <use href="#heart" x="1100" y="250"/>
+    <use href="#invader" x="74" y="658"/>
+    <path d="M324 182h4v4h-4zm638 336h4v4h-4zM254 798h6v6h-6zM642 604h4v4h-4z"/>
+  </g>
+  <g fill="#c5a5ff" opacity=".2">
+    <use href="#gem" x="516" y="38"/>
+    <use href="#spark" x="1132" y="702"/>
+    <path d="M46 396h8v8h-8zm12 12h4v4h-4zM730 152h4v4h-4zm326-92h6v6h-6zM474 746h4v4h-4z"/>
+  </g>
+  <g fill="#80dcd8" opacity=".16">
+    <use href="#spark" x="364" y="506"/>
+    <use href="#gem" x="1010" y="808"/>
+    <path d="M188 290h4v4h-4zm676-58h6v6h-6zM1180 482h4v4h-4zM566 858h8v8h-8zm12-8h4v4h-4z"/>
+  </g>
+  <g stroke="#c5a5ff" stroke-width="2" opacity=".1">
+    <path d="M8 540h20v20h20v20h20M1066 110h20V90h20V70h20M728 788h20v20h20v20h20"/>
+    <path d="M180 46h12v12h-12zM914 662h16v16h-16zM244 608h12v12h-12z"/>
+  </g>
+</svg>

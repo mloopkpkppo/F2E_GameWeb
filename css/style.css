@@ -302,11 +302,16 @@ main[aria-busy='true'] {
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--bg) url('/images/pixel-decor.svg') center 90px / 1200px 900px repeat;
   color: var(--text);
   font-family: var(--font);
   font-size: var(--text-body);
   line-height: 1.75;
+}
+@media (max-width: 700px) {
+  body {
+    background-size: 800px 600px;
+  }
 }
 button,
 input,
@@ -918,8 +923,18 @@ select {
   padding-block: 60px;
   background: #17192c;
   border-block: 1px solid #34324f;
-  background-image: radial-gradient(#9e8cb512 1px, transparent 1px);
-  background-size: 12px 12px;
+  background-image: url('/images/pixel-decor.svg'), radial-gradient(#9e8cb512 1px, transparent 1px);
+  background-position: center top;
+  background-size:
+    1200px 900px,
+    12px 12px;
+}
+@media (max-width: 700px) {
+  .indie-section {
+    background-size:
+      800px 600px,
+      12px 12px;
+  }
 }
 .spotlights {
   display: grid;
