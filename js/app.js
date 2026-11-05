@@ -32,6 +32,7 @@ function readSaved() {
 }
 let saved = readSaved();
 let games = catalog.map((g) => ({ ...g, price: null })),
+  gamePage = 1,
   type = 'all',
   query = '',
   genre = 'all',
@@ -84,7 +85,7 @@ function card(g) {
   return /* HTML */ `<article class="game-card">
     <div class="card-image">
       <img
-        src="/images/${g.id}.jpg"
+        src="${esc(g.image || '/images/' + g.id + '.jpg')}"
         alt="${esc(g.name)} 遊戲封面"
         width="460"
         height="215"
@@ -130,11 +131,20 @@ function render() {
   if (sort === 'price')
     list.sort((a, b) => (a.price?.final ?? Infinity) - (b.price?.final ?? Infinity));
   const limit = Number($('#game-grid').dataset.limit);
+  const matched = list.length;
+  const totalPages = Math.max(1, Math.ceil(matched / 24));
+  gamePage = Math.min(gamePage, totalPages);
   if (limit > 0) list = list.slice(0, limit);
+  else list = list.slice((gamePage - 1) * 24, gamePage * 24);
   $('#game-grid').innerHTML = list.map(card).join('');
   $('#empty').hidden = list.length > 0;
   $('#result-count').textContent =
-    `顯示 ${list.length} 款 / 共收錄 ${availableGames.length} 款遊戲`;
+    `符合 ${matched} 款 · 本頁 ${list.length} 款 / 共收錄 ${availableGames.length} 款遊戲`;
+  const pagination = $('#game-pagination');
+  if (pagination) {
+    pagination.hidden = totalPages <= 1;
+    pagination.innerHTML = `<button class="button outline" data-game-page="${gamePage - 1}" ${gamePage === 1 ? 'disabled' : ''}>← 上一頁</button><span>第 ${gamePage} / ${totalPages} 頁</span><button class="button outline" data-game-page="${gamePage + 1}" ${gamePage === totalPages ? 'disabled' : ''}>下一頁 →</button>`;
+  }
   document.querySelectorAll('[data-type]').forEach((b) => {
     b.classList.toggle('selected', b.dataset.type === type);
     b.setAttribute('aria-pressed', String(b.dataset.type === type));
@@ -153,7 +163,7 @@ function renderDeals() {
             /* HTML */ `<article class="deal-card">
               <div class="deal-image">
                 <img
-                  src="/images/${g.id}.jpg"
+                  src="${esc(g.image || '/images/' + g.id + '.jpg')}"
                   alt="${esc(g.name)} 遊戲封面"
                   width="460"
                   height="215"
@@ -199,12 +209,23 @@ async function loadCatalog() {
   $('#refresh').disabled = true;
   $('#data-status').textContent = '正在取得 Steam 台灣區價格…';
   try {
-    const r = await fetch('/api/catalog');
-    if (!r.ok) throw new Error();
-    const data = await r.json();
-    if (version !== viewVersion) return;
-    if (!Array.isArray(data.games)) throw new Error();
-    games = data.games.filter((g) => validId(g.id));
+    let offset = 0;
+    let checked = 0;
+    do {
+      const r = await fetch('/api/catalog?offset=' + offset);
+      if (!r.ok) throw new Error();
+      const data = await r.json();
+      if (version !== viewVersion) return;
+      if (!Array.isArray(data.games)) throw new Error();
+      const updates = new Map(data.games.filter((g) => validId(g.id)).map((g) => [g.id, g]));
+      games = games.map((g) => updates.get(g.id) || g);
+      checked += data.games.length;
+      $('#data-status').textContent =
+        `正在更新 Steam 台灣區價格：${checked} / ${catalog.length} 款…`;
+      if (data.nextOffset === null) break;
+      if (!Number.isInteger(data.nextOffset) || data.nextOffset <= offset) throw new Error();
+      offset = data.nextOffset;
+    } while (true);
     const available = games.filter((g) => g.status === 'ok').length;
     const dates = games.filter((g) => g.updatedAt).map((g) => new Date(g.updatedAt).getTime());
     const time = dates.length
@@ -227,6 +248,7 @@ async function loadCatalog() {
   }
 }
 function setType(value) {
+  gamePage = 1;
   type = value;
   render();
 }
@@ -295,7 +317,7 @@ function openGame(id) {
   const token = ++detailToken;
   $('#dialog-content').innerHTML = /* HTML */ `<img
       class="dialog-hero"
-      src="/images/${id}.jpg"
+      src="${esc(g.image || '/images/' + id + '.jpg')}"
       alt="${esc(g.name)} 遊戲封面"
     />
     <div class="dialog-body">
@@ -393,7 +415,7 @@ function openGame(id) {
         </div>
         <p class="fine-print">
           ${stale ? '部分為上次成功取得的資料。 ' : ''}價格、人數與評論最多快取 10 分鐘；以 Steam
-          頁面為準。介紹為本站編輯摘要。
+          頁面為準。${g.descriptionSource ? '介紹來源：' + esc(g.descriptionSource) + '。' : '介紹為本站編輯摘要。'}
         </p>`;
       $('#dialog-price').innerHTML = priceHTML(d.detail?.price || g.price);
       $('#screenshots').innerHTML = (d.detail?.screenshots || [])
@@ -468,6 +490,13 @@ function renderComments() {
     : '<p class="muted">還沒有筆記，來記下你的第一個心得吧。</p>';
 }
 document.addEventListener('click', (e) => {
+  const paginationButton = e.target.closest('[data-game-page]');
+  if (paginationButton && !paginationButton.disabled) {
+    gamePage = Math.max(1, Number(paginationButton.dataset.gamePage) || 1);
+    render();
+    $('#explore')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
   const save = e.target.closest('[data-save]');
   if (save) {
     toggleSave(Number(save.dataset.save));
@@ -582,6 +611,7 @@ function bindPageControls() {
     filterMinigames();
   }
   $('#search')?.addEventListener('input', (e) => {
+    gamePage = 1;
     query = e.target.value.trim().toLowerCase();
     render();
   });
@@ -593,10 +623,12 @@ function bindPageControls() {
       .join('');
   }
   $('#genre')?.addEventListener('change', (e) => {
+    gamePage = 1;
     genre = e.target.value;
     render();
   });
   $('#sort')?.addEventListener('change', (e) => {
+    gamePage = 1;
     sort = e.target.value;
     render();
   });
@@ -978,6 +1010,7 @@ window.addEventListener('pageshow', (event) => {
   loadAccount();
 });
 function initializePage() {
+  gamePage = 1;
   updateSaleEvent();
   page = document.body.dataset.page;
   const selected = new URLSearchParams(location.search).get('filter');

@@ -101,20 +101,45 @@ export function createHandler(assets = {}) {
     if (auth) return auth;
     if (request.method !== 'GET') return json({ error: '不支援的操作' }, 405);
     if (path === '/api/catalog') {
-      const games = [];
-      // 僅更新精選名單，不逐筆掃描整個 Steam 商店。
-      for (let i = 0; i < catalog.length; i += 4)
-        await Promise.all(
-          catalog.slice(i, i + 4).map(async (g) => {
-            try {
-              games.push({ ...g, ...(await details(g.id)), status: 'ok' });
-            } catch {
-              games.push({ ...g, price: null, status: 'unavailable' });
-            }
-          }),
-        );
+      const offsetText = url.searchParams.get('offset') || '0';
+      if (!/^\d{1,7}$/.test(offsetText)) return json({ error: '無效的讀取範圍' }, 400);
+      const offset = Number(offsetText);
+      const batch = catalog.slice(offset, offset + 24);
+      let quotes = null;
+      if (batch.length) {
+        try {
+          quotes = await cached('catalog-prices:' + batch.map((g) => g.id).join(','), async () => {
+            const raw = await steam(
+              'https://store.steampowered.com/api/appdetails?' +
+                new URLSearchParams({
+                  appids: batch.map((g) => g.id).join(','),
+                  filters: 'price_overview',
+                  cc: 'tw',
+                  l: 'tchinese',
+                }),
+            );
+            if (!raw || typeof raw !== 'object') throw Error('invalid prices');
+            return { prices: raw, updatedAt: new Date().toISOString() };
+          });
+        } catch {
+          /* 個別批次失敗時仍提供遊戲介紹，不把缺價當成免費。 */
+        }
+      }
       return json({
-        games: catalog.map((g) => games.find((x) => x.id === g.id)),
+        games: batch.map((g) => ({
+          ...g,
+          price: quotes?.prices[g.id]?.success
+            ? normalizePrice({
+                ...(quotes.prices[g.id].data || {}),
+                is_free: !!g.free && !quotes.prices[g.id].data?.price_overview,
+              })
+            : null,
+          status: quotes?.prices[g.id]?.success ? 'ok' : 'unavailable',
+          updatedAt: quotes?.updatedAt || null,
+          stale: !!quotes?.stale,
+        })),
+        total: catalog.length,
+        nextOffset: offset + batch.length < catalog.length ? offset + batch.length : null,
         region: 'TW',
         source: 'Steam Store',
         checkedAt: new Date().toISOString(),

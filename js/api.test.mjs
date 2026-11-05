@@ -2,6 +2,68 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHandler, cached, normalizePrice } from './api.mjs';
 import { loadAssets } from './server.mjs';
+import { catalog } from './catalog.js';
+
+test('catalog price requests use one bounded batch, retain unpriced games, and reject invalid offsets', async () => {
+  const old = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async (url) => {
+    calls++;
+    const u = new URL(url);
+    const ids = u.searchParams.get('appids').split(',').map(Number);
+    assert.ok(ids.length <= 24);
+    assert.equal(u.searchParams.get('filters'), 'price_overview');
+    return Response.json(
+      Object.fromEntries(
+        ids.map((id, index) => [
+          id,
+          {
+            success: true,
+            data:
+              index === 0
+                ? {
+                    price_overview: {
+                      currency: 'TWD',
+                      initial: 10000,
+                      final: 5000,
+                      discount_percent: 50,
+                    },
+                  }
+                : [],
+          },
+        ]),
+      ),
+    );
+  };
+  try {
+    const handler = createHandler();
+    assert.equal((await handler(new Request('https://test/api/catalog?offset=-1'))).status, 400);
+    assert.equal(calls, 0);
+    const first = await (await handler(new Request('https://test/api/catalog?offset=0'))).json();
+    assert.equal(first.games.length, Math.min(24, catalog.length));
+    assert.equal(first.total, catalog.length);
+    assert.equal(first.nextOffset, catalog.length > 24 ? 24 : null);
+    assert.equal(first.games[0].price.final, 5000);
+    assert.equal(first.games[1].price, null);
+    assert.equal(calls, 1);
+    const lastOffset = Math.floor((catalog.length - 1) / 24) * 24;
+    const last = await (
+      await handler(new Request('https://test/api/catalog?offset=' + lastOffset))
+    ).json();
+    assert.equal(last.nextOffset, null);
+    assert.deepEqual(
+      last.games.map((g) => g.id),
+      catalog.slice(lastOffset).map((g) => g.id),
+    );
+    const past = await (
+      await handler(new Request('https://test/api/catalog?offset=' + catalog.length))
+    ).json();
+    assert.deepEqual(past.games, []);
+    assert.equal(past.nextOffset, null);
+  } finally {
+    globalThis.fetch = old;
+  }
+});
 
 test('separate pages support direct navigation, refresh, and HTML files without a catch-all fallback', async () => {
   const handler = createHandler(await loadAssets());
