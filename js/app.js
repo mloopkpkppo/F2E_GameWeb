@@ -32,6 +32,146 @@ function readSaved() {
   return new Set(Array.isArray(stored) ? stored.filter(validId).map(Number) : []);
 }
 let saved = readSaved();
+let favoritesMode = deployment.apiOrigin ? 'guest' : 'loading';
+let favoriteAccount = null;
+let favoriteBusy = false;
+let favoriteLoad = 0;
+// 只接收遊戲編號，不從網址接收 SteamID 或登入憑證。
+if (!deployment.apiOrigin && location.hash.startsWith('#local-favorites=')) {
+  try {
+    const ids = JSON.parse(decodeURIComponent(location.hash.slice('#local-favorites='.length)));
+    if (Array.isArray(ids) && ids.length <= catalog.length) {
+      sessionStorage.setItem('pq-import-saved', JSON.stringify(ids.filter(validId).map(Number)));
+    }
+  } catch {}
+  history.replaceState(null, '', location.pathname + location.search);
+}
+
+function importCandidates() {
+  let transferred = [];
+  try {
+    transferred = JSON.parse(sessionStorage.getItem('pq-import-saved')) || [];
+  } catch {}
+  return [
+    ...new Set([
+      ...readSaved(),
+      ...(Array.isArray(transferred) ? transferred.filter(validId).map(Number) : []),
+    ]),
+  ].filter((id) => !saved.has(id));
+}
+
+function renderFavoritesBanner() {
+  const main = document.querySelector('#main-content');
+  if (!main) return;
+  let banner = main.querySelector('.favorites-banner');
+  if (!banner) {
+    banner = document.createElement('aside');
+    banner.className = 'favorites-banner container';
+    banner.setAttribute('aria-label', '收藏同步狀態');
+    main.prepend(banner);
+  }
+  const account = deployment.apiOrigin ? deployment.apiOrigin + '/account' : '/account';
+  const local = [...readSaved()];
+  const transfer =
+    deployment.apiOrigin && local.length
+      ? '#local-favorites=' + encodeURIComponent(JSON.stringify(local))
+      : '';
+  if (deployment.apiOrigin) {
+    $('#steam-nav').href = account + transfer;
+    const cloudSaved = $('#saved-nav');
+    cloudSaved.href = deployment.apiOrigin + '/games?filter=saved' + transfer;
+    cloudSaved.innerHTML =
+      '<span aria-hidden="true">♡</span> 帳號收藏 ↗<b id="saved-count" hidden></b>';
+  }
+  if (favoritesMode === 'cloud') {
+    const candidates = importCandidates();
+    banner.innerHTML = `<span role="status">帳號收藏 ${saved.size} 款 · 已同步</span><div><a class="text-link" href="/games?filter=saved">查看收藏 →</a>${candidates.length ? `<button class="button outline" data-import-saved ${favoriteBusy ? 'disabled' : ''}>匯入本機收藏（${candidates.length} 款）</button>` : ''}</div>`;
+  } else if (favoritesMode === 'loading') {
+    banner.innerHTML = '<span role="status">正在確認帳號收藏…</span>';
+  } else if (favoritesMode === 'error') {
+    banner.innerHTML =
+      '<span role="status">帳號收藏暫時無法讀取。</span><button class="button outline" data-retry-favorites>重新讀取</button>';
+  } else {
+    banner.innerHTML = `<span>收藏儲存在此瀏覽器</span><a class="text-link" href="${esc(account + transfer)}">登入 Steam，同步收藏 →</a>`;
+  }
+}
+
+async function loadFavorites() {
+  const revision = ++favoriteLoad;
+  if (deployment.apiOrigin) {
+    favoritesMode = 'guest';
+    saved = readSaved();
+    render();
+    return;
+  }
+  favoritesMode = 'loading';
+  favoriteAccount = null;
+  saved = new Set();
+  render();
+  updateDialogSave();
+  try {
+    const response = await fetch('/api/me/favorites', { cache: 'no-store' });
+    if (revision !== favoriteLoad) return;
+    if (response.status === 401) {
+      favoritesMode = 'guest';
+      saved = readSaved();
+    } else {
+      if (!response.ok) throw Error();
+      const data = await response.json();
+      if (revision !== favoriteLoad) return;
+      favoriteAccount = data.steamid;
+      saved = new Set(data.ids.filter(validId));
+      favoritesMode = 'cloud';
+    }
+  } catch {
+    if (revision !== favoriteLoad) return;
+    favoritesMode = 'error';
+  }
+  render();
+  updateDialogSave();
+}
+
+async function changeCloudFavorites(path, body, message) {
+  if (favoriteBusy || favoritesMode !== 'cloud') return;
+  const account = favoriteAccount;
+  favoriteBusy = true;
+  render();
+  updateDialogSave();
+  try {
+    const response = await fetch(path, {
+      method: path.endsWith('/import') ? 'POST' : 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+    });
+    if (!response.ok) {
+      if (response.status === 401) {
+        toast('登入已過期，請重新登入 Steam。');
+        await loadFavorites();
+        return;
+      }
+      throw Error();
+    }
+    const data = await response.json();
+    if (favoriteAccount !== account || data.steamid !== account) {
+      await loadFavorites();
+      return;
+    }
+    saved = new Set(data.ids.filter(validId));
+    if (path.endsWith('/import')) {
+      try {
+        sessionStorage.removeItem('pq-import-saved');
+      } catch {}
+    }
+    toast(message);
+  } catch {
+    toast('收藏同步結果未確認，請重新讀取後確認。');
+  } finally {
+    favoriteBusy = false;
+    render();
+    updateDialogSave();
+  }
+}
 let games = catalog.map((g) => ({ ...g, price: null })),
   gamePage = 1,
   type = 'all',
@@ -76,6 +216,7 @@ function saveButton(g) {
   return /* HTML */ `<button
     class="save-button ${saved.has(g.id) ? 'saved' : ''}"
     data-save="${g.id}"
+    ${favoriteBusy || ['loading', 'error'].includes(favoritesMode) ? 'disabled' : ''}
     aria-pressed="${saved.has(g.id)}"
     aria-label="${saved.has(g.id) ? '取消收藏' : '收藏'} ${esc(g.name)}"
   >
@@ -116,6 +257,7 @@ function card(g) {
 }
 function render() {
   $('#saved-count').textContent = saved.size;
+  renderFavoritesBanner();
   if (!$('#game-grid')) return;
   const availableGames = page === 'indie' ? games.filter((g) => g.indie) : games;
   let list = availableGames.filter(
@@ -254,6 +396,15 @@ function setType(value) {
   render();
 }
 function toggleSave(id) {
+  if (!validId(id) || favoriteBusy || ['loading', 'error'].includes(favoritesMode)) return;
+  if (favoritesMode === 'cloud') {
+    changeCloudFavorites(
+      '/api/me/favorites',
+      { appid: id, saved: !saved.has(id) },
+      saved.has(id) ? '已從帳號收藏移除。' : '已加入帳號收藏，可跨電腦同步。',
+    );
+    return;
+  }
   const next = new Set(saved);
   next.has(id) ? next.delete(id) : next.add(id);
   if (!writeStorage('pq-saved', [...next])) return;
@@ -265,6 +416,7 @@ function toggleSave(id) {
 function updateDialogSave() {
   const b = $('#dialog-save');
   if (b) {
+    b.disabled = favoriteBusy || ['loading', 'error'].includes(favoritesMode);
     b.textContent = saved.has(activeId) ? '♥ 已收藏' : '♡ 加入收藏';
     b.setAttribute('aria-pressed', String(saved.has(activeId)));
   }
@@ -491,6 +643,18 @@ function renderComments() {
     : '<p class="muted">還沒有筆記，來記下你的第一個心得吧。</p>';
 }
 document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-retry-favorites]')) {
+    loadFavorites();
+    return;
+  }
+  if (e.target.closest('[data-import-saved]')) {
+    changeCloudFavorites(
+      '/api/me/favorites/import',
+      { ids: importCandidates() },
+      '本機收藏已匯入目前的 Steam 帳號。',
+    );
+    return;
+  }
   const paginationButton = e.target.closest('[data-game-page]');
   if (paginationButton && !paginationButton.disabled) {
     gamePage = Math.max(1, Number(paginationButton.dataset.gamePage) || 1);
@@ -1011,8 +1175,7 @@ async function restoreOwnedGames() {
 }
 window.addEventListener('pageshow', (event) => {
   if (!event.persisted) return;
-  saved = readSaved();
-  render();
+  loadFavorites();
   restoreOwnedGames();
   loadAccount();
 });
@@ -1025,9 +1188,8 @@ function initializePage() {
   query = '';
   genre = 'all';
   sort = 'featured';
-  saved = readSaved();
   bindPageControls();
-  render();
+  loadFavorites();
   loadCatalog();
   loadAccount();
   restoreOwnedGames();

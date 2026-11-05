@@ -8,13 +8,21 @@ const packed = Object.fromEntries(
   ]),
 );
 const catalog = await readFile(new URL('./catalog.js', import.meta.url), 'utf8');
-const auth = await readFile(new URL('./steam-auth.mjs', import.meta.url), 'utf8');
+const favorites = (await readFile(new URL('./favorites.mjs', import.meta.url), 'utf8')).replace(
+  /^import .*from '\.\/catalog.js';\s*/m,
+  '',
+);
+const auth = (await readFile(new URL('./steam-auth.mjs', import.meta.url), 'utf8')).replace(
+  /^import .*from '\.\/favorites.mjs';\s*/m,
+  '',
+);
 const api = (await readFile(new URL('./api.mjs', import.meta.url), 'utf8')).replace(
   /^import\s+\{\s*(?:catalog|handleSteamAuth)\s*\}\s+from\s+['"]\.\/(?:catalog\.js|steam-auth\.mjs)['"];?\s*$/gm,
   '',
 );
 const source = [
   catalog,
+  favorites,
   auth,
   api,
   `
@@ -31,6 +39,7 @@ export default {
   fetch(request, env) {
     return handler(request, {
       ...env,
+      favoritesStore: createFavoritesStore(env.DB),
       claimLogin: env.DB ? async (nonce, expires) => {
         await env.DB.prepare('DELETE FROM steam_login_nonces WHERE expires < ?')
           .bind(Date.now()).run();
@@ -58,12 +67,17 @@ await writeFile(
   await readFile(new URL('./migrations/0001_steam_login.sql', import.meta.url)),
 );
 await writeFile(
+  new URL('../dist/.openai/drizzle/0001_user_favorites.sql', import.meta.url),
+  await readFile(new URL('./migrations/0002_user_favorites.sql', import.meta.url)),
+);
+await writeFile(
   new URL('../dist/.openai/drizzle/meta/_journal.json', import.meta.url),
   JSON.stringify({
     version: '7',
     dialect: 'sqlite',
     entries: [
       { idx: 0, version: '6', when: 1793440000000, tag: '0000_steam_login', breakpoints: true },
+      { idx: 1, version: '6', when: 1793890000000, tag: '0001_user_favorites', breakpoints: true },
     ],
   }),
 );

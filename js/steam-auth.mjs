@@ -1,3 +1,5 @@
+import { handleFavorites } from './favorites.mjs';
+
 const OPENID = 'https://steamcommunity.com/openid/login';
 const NS = 'http://specs.openid.net/auth/2.0';
 const encoder = new TextEncoder();
@@ -158,6 +160,7 @@ export async function handleSteamAuth(request, env) {
     secret = env.SESSION_SECRET;
   const session = await verifyToken(readCookie(request, n.session), secret, origin, 'session');
   const user = session && /^\d{17}$/.test(session.steamid) ? session : null;
+  if (path.startsWith('/api/me/favorites')) return handleFavorites(request, env, user);
   if (path === '/auth/steam' && request.method === 'GET') {
     if (!env.claimLogin) return authJSON({ error: '登入驗證儲存空間尚未設定。' }, 503);
     const state = crypto.randomUUID();

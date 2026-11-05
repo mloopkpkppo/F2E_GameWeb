@@ -27,6 +27,30 @@
   color: var(--muted);
   font-size: var(--text-small);
 }
+.favorites-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  padding: 16px 20px;
+  margin-block: 24px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--lime);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.favorites-banner > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.save-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
 .sale-event {
   border: 1px solid var(--line);
   background: var(--surface);

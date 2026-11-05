@@ -40,7 +40,7 @@ test('only the configured Pages origin can read public API responses across orig
   );
 });
 
-test('account pages link back to Pages while Steam authentication stays on the Worker', async () => {
+test('signed-in browsing keeps collection and authentication on the same Worker origin', async () => {
   const env = { FRONTEND_URL: 'https://owner.github.io/repo/' };
   const app = {
     fetch: () =>
@@ -50,6 +50,6 @@ test('account pages link back to Pages while Steam authentication stays on the W
   };
   const response = await serveCloudflare(new Request('https://api.example/account'), env, app);
   const html = await response.text();
-  assert.ok(html.includes('href="https://owner.github.io/repo/games/"'));
+  assert.ok(html.includes('href="/games"'));
   assert.ok(html.includes('href="/auth/steam"'));
 });

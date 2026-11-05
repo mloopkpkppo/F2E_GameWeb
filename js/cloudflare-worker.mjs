@@ -1,4 +1,5 @@
 import { createHandler } from './api.mjs';
+import { createFavoritesStore } from './favorites.mjs';
 
 export async function serveCloudflare(request, env, app) {
   const url = new URL(request.url);
@@ -38,19 +39,17 @@ export async function serveCloudflare(request, env, app) {
         return result.meta.changes === 1;
       }
     : null;
-  const runtime = { ...env, claimLogin, SITE_ORIGIN: env.SITE_ORIGIN || url.origin };
+  const runtime = {
+    ...env,
+    claimLogin,
+    favoritesStore: createFavoritesStore(env.DB),
+    SITE_ORIGIN: env.SITE_ORIGIN || url.origin,
+  };
   const response = app ? await app.fetch(request, runtime) : await handler(request, runtime);
   const headers = new Headers(response.headers);
   if (publicAPI && origin === env.FRONTEND_ORIGIN) {
     headers.set('Access-Control-Allow-Origin', origin);
     headers.append('Vary', 'Origin');
-  }
-  if (env.FRONTEND_URL && headers.get('Content-Type')?.includes('text/html')) {
-    const html = (await response.text()).replace(
-      /href="\/(games|indie|minigames|deals)?([?#][^"]*)?"/g,
-      (_, page, query = '') => `href="${env.FRONTEND_URL}${page ? page + '/' : ''}${query}"`,
-    );
-    return new Response(html, { status: response.status, headers });
   }
   return new Response(response.body, { status: response.status, headers });
 }

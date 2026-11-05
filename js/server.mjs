@@ -3,6 +3,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { createHandler } from './api.mjs';
+import { createFavoritesStore } from './favorites.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 export async function loadAssets() {
   const assets = {};
@@ -45,10 +46,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   db.exec(
     'CREATE TABLE IF NOT EXISTS steam_login_nonces (nonce TEXT PRIMARY KEY, expires INTEGER NOT NULL)',
   );
+  db.exec(
+    'CREATE TABLE IF NOT EXISTS user_favorites (steamid TEXT NOT NULL, appid INTEGER NOT NULL, PRIMARY KEY (steamid,appid))',
+  );
   const env = {
     SITE_ORIGIN: process.env.SITE_ORIGIN || 'http://localhost:' + (process.env.PORT || 3000),
     SESSION_SECRET: process.env.SESSION_SECRET || crypto.randomUUID() + crypto.randomUUID(),
     STEAM_API_KEY: process.env.STEAM_API_KEY,
+    favoritesStore: createFavoritesStore(db, true),
     claimLogin: async (nonce, expires) => {
       db.prepare('DELETE FROM steam_login_nonces WHERE expires < ?').run(Date.now());
       return (

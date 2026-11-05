@@ -26,7 +26,9 @@ npm run format:check
 - Cloudflare Worker `pixelized-api` 處理 Steam 登入、資料查詢與公開遊戲 API；D1 `pixelized-auth` 只保存短期登入驗證紀錄。
 - `STEAM_API_KEY` 與 `SESSION_SECRET` 設定為 Worker Secrets，不放在 GitHub、前端或一般變數內。更換金鑰時，在 Cloudflare 控制台的 Worker「Settings → Variables and Secrets」編輯 Secret。
 - `PUBLIC_API_ORIGIN` 是 GitHub 倉庫的公開變數，僅存放後端網址，不是 API Key。
-- GitHub Pages 與 Cloudflare 的帳號頁位於不同網站；收藏與瀏覽器暫存各自保存，不會跨網站同步。登入 Cookie 保持 HttpOnly、Secure 與 SameSite=Lax。
+- GitHub Pages 提供公開瀏覽與本機收藏；點「Steam 帳號」或「帳號收藏」進入 Cloudflare。登入後留在 Cloudflare 瀏覽，收藏依驗證後的 SteamID 保存於 D1，可跨電腦同步。登入 Cookie 保持 HttpOnly、Secure 與 SameSite=Lax，私人收藏 API 不開放跨網站 Cookie 存取。
+- 「匯入本機收藏」會合併新增至目前帳號，不覆蓋既有雲端收藏。Pages 帶入的遊戲編號僅暫存於 Cloudflare 分頁，必須由玩家點擊匯入；不傳遞 SteamID 或憑證。未登入的本機收藏與試用留言仍各自保存在瀏覽器。
+- 收藏資料表為 `user_favorites(steamid, appid)`，複合主鍵避免重複收藏。API 不接受前端指定 SteamID，所有寫入均要求同源與有效登入，回應禁止快取。
 
 本機預覽 Pages 輸出：先設定 `PUBLIC_API_ORIGIN=https://pixelized-api.pixelized-mloop.workers.dev`，再執行 `npm run build:pages`。Pages 的各頁位於 `/F2E_GameWeb/games/` 等子路徑，直接開啟與重新整理皆可使用。
 
@@ -71,7 +73,7 @@ npm run format:check
 
 透過 npm start 或正式網站開啟這些路徑，直接輸入網址及重新整理都可使用。舊的 /#indie、/#deals 等書籤會轉到新頁面；收藏清單位於 /games?filter=saved。
 
-Steam 登入成功、取消、失敗及登出都會回到 /account。完整遊戲庫仍只在主動讀取時取得；為了跨頁標示已擁有的遊戲，僅把帳號對應的遊戲編號暫存於 sessionStorage，使用前重新驗證登入身分，登出時清除。這不會同步收藏或留言到其他裝置。
+Steam 登入成功、取消、失敗及登出都會回到 /account。完整遊戲庫仍只在主動讀取時取得；為了跨頁標示已擁有的遊戲，僅把帳號對應的遊戲編號暫存於 sessionStorage，使用前重新驗證登入身分，登出時清除。帳號收藏另外保存於資料庫並跨裝置同步；試用留言仍只存於瀏覽器。
 
 ## 第一版功能
 
@@ -88,7 +90,8 @@ Steam 登入成功、取消、失敗及登出都會回到 /account。完整遊�
 - 評論：Steam Web API IUserReviewsService/GetAppReviews/v1，所有語言、Steam 購買範圍，顯示原文與來源連結；不是本站使用者評論。排序與資料量受 Steam 控制。
 - 在線人數：ISteamUserStats/GetNumberOfCurrentPlayers/v1，只代表 Steam，不是全平台人數。
 - 伺服器快取：每個程序記憶體保存 10 分鐘，重啟會消失。上游失敗可回傳上次成功值並標示；舊值不列入目前優惠。
-- 收藏與試用留言：瀏覽器 localStorage，保留最近 100 則筆記。只在此瀏覽器保存，不公開、不跨裝置同步；清除網站資料會消失。正式多人留言需另加資料庫、登入及審核機制。
+- 收藏：未登入時使用瀏覽器 localStorage；在 Cloudflare 登入後改用綁定 SteamID 的資料庫收藏，可跨裝置同步。本機收藏可由玩家主動匯入。
+- 試用留言：瀏覽器 localStorage，保留最近 100 則筆記，不公開、不跨裝置同步；清除網站資料會消失。正式多人留言需另加資料庫、登入及審核機制。
 - SteamDB：僅外部連結，沒有爬取其資料。
 - 字型：Google Fonts 的 DotGothic16 與 Noto Sans TC；無法連線時使用系統字型。
 
@@ -134,9 +137,9 @@ Steam 登入成功、取消、失敗及登出都會回到 /account。完整遊�
 - js/migrations/0001_steam_login.sql：一次性登入回呼識別碼的資料表。
 - .env.example：可填寫設定的範本，沒有真實金鑰。
 
-本機只會在 `.local/auth.sqlite` 保存短期隨機登入識別碼，用來阻擋重複回呼；不保存 Steam 密碼、個人檔案或遊戲庫。線上對應使用 D1 的 DB binding。有效的登入 Cookie 最長 8 小時，Secure（線上）、HttpOnly、SameSite=Lax，且不能用前端自行填入 SteamID 偽裝成會員。
+本機在 `.local/auth.sqlite` 保存短期隨機登入識別碼與帳號收藏（SteamID、遊戲編號）；不保存 Steam 密碼、個人檔案或遊戲庫。線上對應使用亞太區 D1 的 DB binding。取消收藏會刪除對應紀錄。有效的登入 Cookie 最長 8 小時，Secure（線上）、HttpOnly、SameSite=Lax，且不能用前端自行填入 SteamID 偽裝成會員。
 
-遊戲庫需由登入玩家主動點擊讀取。私人遊戲庫或未回傳資料會呈現無法取得，不會解讀為零款遊戲。收藏與試用留言仍是本機瀏覽器功能；本版沒有跨裝置會員收藏或公開會員留言。
+遊戲庫需由登入玩家主動點擊讀取。私人遊戲庫或未回傳資料會呈現無法取得，不會解讀為零款遊戲。登入後的帳號收藏支援跨裝置同步；試用留言仍是本機瀏覽器功能，本版沒有公開會員留言。
 
 測試中的 Steam 正面驗證、個人資料和遊戲庫回應使用模擬資料，不會用開發者或訪客的帳號自動登入。真實資料讀取仍需管理者金鑰，以及使用者在 Steam 官方頁面完成登入。
 
