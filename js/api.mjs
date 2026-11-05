@@ -185,7 +185,10 @@ export function createHandler(assets = {}) {
         headers: { Location: path.slice(0, -1) + url.search },
       });
     }
-    const asset = assets[pages[path] || path];
+    const asset =
+      typeof assets === 'function'
+        ? await assets(pages[path] || path)
+        : assets[pages[path] || path];
     if (!asset) return new Response('Not found', { status: 404 });
     return new Response(asset.body, {
       headers: {

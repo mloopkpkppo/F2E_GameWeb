@@ -1,3 +1,5 @@
+import { deployment, sitePath } from './site-config.js';
+
 const pages = {
   '/': { name: 'home', order: 0 },
   '/games': { name: 'games', order: 1 },
@@ -8,6 +10,10 @@ const pages = {
 };
 
 export function pageFor(pathname) {
+  if (deployment.basePath) {
+    if (!pathname.startsWith(deployment.basePath + '/')) return null;
+    pathname = pathname.slice(deployment.basePath.length);
+  }
   const path =
     pathname === '/index.html' ? '/' : pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
   return pages[path] ? { ...pages[path], path } : null;
@@ -26,7 +32,7 @@ export function setupNavigation({ beforeChange, afterChange }) {
 
   function updateMenu(path) {
     document.querySelectorAll('.nav-link, #steam-nav').forEach((link) => {
-      const active = new URL(link.href).pathname === path;
+      const active = pageFor(new URL(link.href).pathname)?.path === path;
       link.classList.toggle('active', active);
       if (active) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
@@ -46,7 +52,7 @@ export function setupNavigation({ beforeChange, afterChange }) {
     try {
       let html = cache.get(destination.path);
       if (!html) {
-        const response = await fetch(destination.path, { signal: pending.signal });
+        const response = await fetch(sitePath(destination.path), { signal: pending.signal });
         if (!response.ok || !response.headers.get('content-type')?.includes('text/html')) {
           throw new Error('Page unavailable');
         }

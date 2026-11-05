@@ -16,7 +16,21 @@ npm run format:check
 
 ## 啟動
 
-需安裝 Node.js 22.13 以上版本（建議 Node.js 24 LTS）。在這個資料夾開啟終端機，執行 `npm start`，再開啟 http://localhost:3000 。也可以雙擊「啟動網站.cmd」。按 Ctrl+C 停止伺服器。
+需安裝 Node.js 24.22.0 以上的 24 LTS 版本（Cloudflare 工具需求）。在這個資料夾開啟終端機，執行 `npm start`，再開啟 http://localhost:3000 。也可以雙擊「啟動網站.cmd」。按 Ctrl+C 停止伺服器。
+
+## GitHub Pages 與 Cloudflare
+
+- 網站：https://mloopkpkppo.github.io/F2E_GameWeb/
+- Steam 帳號與遊戲庫：https://pixelized-api.pixelized-mloop.workers.dev/account
+- GitHub Pages 只發布 `dist/pages/` 中的公開畫面、腳本與圖片。推送 `main` 後，GitHub Actions 自動建置與發布。
+- Cloudflare Worker `pixelized-api` 處理 Steam 登入、資料查詢與公開遊戲 API；D1 `pixelized-auth` 只保存短期登入驗證紀錄。
+- `STEAM_API_KEY` 與 `SESSION_SECRET` 設定為 Worker Secrets，不放在 GitHub、前端或一般變數內。更換金鑰時，在 Cloudflare 控制台的 Worker「Settings → Variables and Secrets」編輯 Secret。
+- `PUBLIC_API_ORIGIN` 是 GitHub 倉庫的公開變數，僅存放後端網址，不是 API Key。
+- GitHub Pages 與 Cloudflare 的帳號頁位於不同網站；收藏與瀏覽器暫存各自保存，不會跨網站同步。登入 Cookie 保持 HttpOnly、Secure 與 SameSite=Lax。
+
+本機預覽 Pages 輸出：先設定 `PUBLIC_API_ORIGIN=https://pixelized-api.pixelized-mloop.workers.dev`，再執行 `npm run build:pages`。Pages 的各頁位於 `/F2E_GameWeb/games/` 等子路徑，直接開啟與重新整理皆可使用。
+
+更新 Cloudflare 後端：先執行 `npx cf auth login`，再執行 `npm run build:cloudflare`、`npx cf deploy --prebuilt --mode production`。已存在的 Worker Secrets 會保留；不要將 `.env` 或 `.local/` 加入版本控制。
 
 請透過本機伺服器使用；直接雙擊 index.html 或只有靜態檔案的 Live Server 無法執行 Steam 後端串接。
 

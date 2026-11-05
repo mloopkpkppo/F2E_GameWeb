@@ -3,16 +3,21 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.13"
+    "node": "^22.23.0 || ^24.22.0 || ^26.12.0"
   },
   "scripts": {
     "start": "node js/server.mjs",
     "build": "node js/build.mjs",
-    "test": "node --test js/api.test.mjs js/steam-auth.test.mjs js/navigation.test.mjs",
+    "test": "node --test js/api.test.mjs js/steam-auth.test.mjs js/navigation.test.mjs js/deployment.test.mjs",
     "format": "prettier --write \"*.html\" css js package.json .openai/hosting.json .prettierrc.json README.md",
-    "format:check": "prettier --check \"*.html\" css js package.json .openai/hosting.json .prettierrc.json README.md"
+    "format:check": "prettier --check \"*.html\" css js package.json .openai/hosting.json .prettierrc.json README.md",
+    "build:pages": "node js/build-pages.mjs",
+    "build:cloudflare": "node js/prepare-cloudflare.mjs && cf build"
   },
   "devDependencies": {
-    "prettier": "3.9.10"
+    "@cloudflare/vite-plugin": "^2.0.0-beta.v.12",
+    "cf": "^1.0.0-beta.28",
+    "prettier": "3.9.10",
+    "vite": "^8.3.6"
   }
 }

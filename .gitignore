@@ -5,3 +5,5 @@ site.tar.gz
 .env.*
 !.env.example
 .local/
+.cloudflare/
+.wrangler/

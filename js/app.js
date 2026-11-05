@@ -1,6 +1,7 @@
 import { catalog } from './catalog.js';
 import { setupNavigation } from './navigation.js';
 import { minigames } from './minigames.js';
+import { deployment, sitePath, apiPath } from './site-config.js';
 const $ = (s) => document.querySelector(s);
 const esc = (v) =>
   String(v ?? '').replace(
@@ -85,7 +86,7 @@ function card(g) {
   return /* HTML */ `<article class="game-card">
     <div class="card-image">
       <img
-        src="${esc(g.image || '/images/' + g.id + '.jpg')}"
+        src="${esc(sitePath(g.image || '/images/' + g.id + '.jpg'))}"
         alt="${esc(g.name)} 遊戲封面"
         width="460"
         height="215"
@@ -163,7 +164,7 @@ function renderDeals() {
             /* HTML */ `<article class="deal-card">
               <div class="deal-image">
                 <img
-                  src="${esc(g.image || '/images/' + g.id + '.jpg')}"
+                  src="${esc(sitePath(g.image || '/images/' + g.id + '.jpg'))}"
                   alt="${esc(g.name)} 遊戲封面"
                   width="460"
                   height="215"
@@ -212,7 +213,7 @@ async function loadCatalog() {
     let offset = 0;
     let checked = 0;
     do {
-      const r = await fetch('/api/catalog?offset=' + offset);
+      const r = await fetch(apiPath('/api/catalog?offset=' + offset));
       if (!r.ok) throw new Error();
       const data = await r.json();
       if (version !== viewVersion) return;
@@ -298,7 +299,7 @@ function reviewHTML(r, g) {
 }
 async function getDetail(id) {
   if (details.has(id)) return details.get(id);
-  const r = await fetch('/api/game/' + id);
+  const r = await fetch(apiPath('/api/game/' + id));
   if (!r.ok) throw new Error();
   const d = await r.json();
   details.set(id, d);
@@ -317,7 +318,7 @@ function openGame(id) {
   const token = ++detailToken;
   $('#dialog-content').innerHTML = /* HTML */ `<img
       class="dialog-hero"
-      src="${esc(g.image || '/images/' + id + '.jpg')}"
+      src="${esc(sitePath(g.image || '/images/' + id + '.jpg'))}"
       alt="${esc(g.name)} 遊戲封面"
     />
     <div class="dialog-body">
@@ -581,7 +582,12 @@ function bindPageControls() {
                   rel="noopener noreferrer"
                   tabindex="-1"
                   aria-hidden="true"
-                  ><img src="${esc(g.image)}" alt="" width="1200" height="630" loading="lazy"
+                  ><img
+                    src="${esc(sitePath(g.image))}"
+                    alt=""
+                    width="1200"
+                    height="630"
+                    loading="lazy"
                 /></a>
                 <div class="mini-card-content">
                   <div class="mini-card-tags">
@@ -979,6 +985,7 @@ async function loadLibrary() {
 }
 async function restoreOwnedGames() {
   if (!$('#game-grid')) return;
+  if (deployment.apiOrigin) return;
   const version = viewVersion;
   ownedGames = null;
   render();
@@ -1044,8 +1051,8 @@ const legacyPages = {
   '#community': '/games',
   '#account': '/account',
 };
-if (location.pathname === '/' && legacyPages[location.hash]) {
-  location.replace(legacyPages[location.hash] + location.search);
+if (location.pathname === sitePath('/') && legacyPages[location.hash]) {
+  location.replace(sitePath(legacyPages[location.hash]) + location.search);
 } else {
   initializePage();
 }
